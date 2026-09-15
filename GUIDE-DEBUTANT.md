@@ -22,7 +22,8 @@ Le parcours complet réalise les opérations suivantes :
 2. calcul du pack compatible avec le budget configuré ;
 3. confirmation du téléchargement ;
 4. téléchargement avec reprise en cas d'interruption ;
-5. création automatique de `.vscode/mcp.json` dans le projet choisi ;
+5. création automatique de `.vscode/mcp.json` et des instructions IA dans
+   `.github/copilot-instructions.md` dans le projet choisi ;
 6. contrôles de fonctionnement.
 
 ## Valeurs recommandées
@@ -72,7 +73,7 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 | 2 | Installe ou met à jour OpenZIM MCP |
 | 3 | Affiche les archives choisies et leur taille, sans les télécharger |
 | 4 | Télécharge le pack avec reprise et contrôles |
-| 5 | Configure automatiquement le projet VS Code sélectionné |
+| 5 | Configure automatiquement MCP et les instructions IA du projet VS Code sélectionné |
 | 6 | Vérifie PowerShell, Ollama, les modèles, les ZIM et le serveur MCP |
 | 7 | Affiche les archives déjà présentes |
 | 8 | Recherche et installe les nouvelles versions |

@@ -50,6 +50,19 @@ else {
     Add-TestResult -Test 'Configuration MCP' -Success $false -Detail "Fichier absent : $mcpPath"
 }
 
+$instructionsPath = Join-Path $ProjectDirectory '.github\copilot-instructions.md'
+if (Test-Path -LiteralPath $instructionsPath) {
+    $instructions = Get-Content -LiteralPath $instructionsPath -Raw -Encoding UTF8
+    $hasManagedInstructions =
+        $instructions.Contains('<!-- openzim-mcp:begin -->') -and
+        $instructions.Contains('<!-- openzim-mcp:end -->') -and
+        $instructions.Contains('zim_query')
+    Add-TestResult -Test 'Instructions IA OpenZIM' -Success $hasManagedInstructions -Detail $instructionsPath
+}
+else {
+    Add-TestResult -Test 'Instructions IA OpenZIM' -Success $false -Detail "Fichier absent : $instructionsPath"
+}
+
 try {
     $ollama = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 5
     $modelNames = @($ollama.models | ForEach-Object { $_.name })

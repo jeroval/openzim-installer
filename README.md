@@ -46,7 +46,7 @@ meme source sont mutuellement exclusives.
 # 3. Telecharger les sources principales avec reprise et controle SHA-256
 .\openzim.ps1 -Action Download
 
-# 4. Configurer .vscode/mcp.json
+# 4. Configurer MCP et les instructions IA du projet
 .\openzim.ps1 -Action Configure -Mode simple
 
 # 5. Controler l'environnement local
@@ -82,7 +82,7 @@ Les archives Dart et Bootstrap sont optionnelles :
 | `Install` | Installe/met a jour uv et OpenZIM MCP |
 | `Download` | Telecharge les archives manquantes et reprend les `.part` |
 | `Update` | Recherche et telecharge les nouvelles editions |
-| `Configure` | Cree ou complete `.vscode/mcp.json` |
+| `Configure` | Cree ou complete `.vscode/mcp.json` et `.github/copilot-instructions.md` |
 | `Status` | Inventorie les archives locales |
 | `Test` | Controle les commandes, Ollama, les modeles et MCP |
 | `RegisterUpdate` | Cree une verification hebdomadaire dans le Planificateur Windows |
@@ -102,7 +102,7 @@ Les archives Dart et Bootstrap sont optionnelles :
 Executer les tests hors reseau :
 
 ```powershell
-Invoke-Pester .\tests\OpenZim.Tests.ps1
+Invoke-Pester .\openzim-installer\OpenZim.Tests.ps1
 ```
 
 ## Mise a jour

@@ -159,6 +159,48 @@ Describe 'Journalisation structuree' {
     }
 }
 
+Describe 'Instructions IA du projet' {
+    BeforeEach {
+        Import-Module $modulePath -Force
+        $script:workspace = Join-Path $TestDrive 'workspace'
+        New-Item -ItemType Directory -Path $workspace -Force | Out-Null
+    }
+
+    It 'preserve les instructions existantes et reste idempotent' {
+        $githubDirectory = Join-Path $workspace '.github'
+        New-Item -ItemType Directory -Path $githubDirectory -Force | Out-Null
+        $instructionsPath = Join-Path $githubDirectory 'copilot-instructions.md'
+        [IO.File]::WriteAllText($instructionsPath, "# Regles du projet`r`n", [Text.UTF8Encoding]::new($false))
+
+        Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
+        Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
+
+        $content = [IO.File]::ReadAllText($instructionsPath)
+        if (-not $content.Contains('# Regles du projet')) {
+            throw 'Les instructions existantes ont ete supprimees.'
+        }
+        if ([regex]::Matches($content, '<!-- openzim-mcp:begin -->').Count -ne 1) {
+            throw 'Le bloc OpenZIM a ete duplique.'
+        }
+        if (-not $content.Contains('zim_query')) {
+            throw "L'instruction d'utiliser zim_query est absente."
+        }
+    }
+
+    It 'refuse un marqueur incomplet sans modifier le fichier' {
+        $githubDirectory = Join-Path $workspace '.github'
+        New-Item -ItemType Directory -Path $githubDirectory -Force | Out-Null
+        $instructionsPath = Join-Path $githubDirectory 'copilot-instructions.md'
+        $original = '<!-- openzim-mcp:begin -->'
+        [IO.File]::WriteAllText($instructionsPath, $original, [Text.UTF8Encoding]::new($false))
+
+        { Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false } | Should Throw
+        if ([IO.File]::ReadAllText($instructionsPath) -ne $original) {
+            throw 'Le fichier avec un marqueur incomplet a ete modifie.'
+        }
+    }
+}
+
 Describe 'Premier lancement' {
     It 'affiche correctement une bibliotheque vide' {
         $emptyLibrary = Join-Path $TestDrive 'empty-library'

@@ -55,6 +55,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+Import-Module (Join-Path $PSScriptRoot 'OpenZim.Common.psm1') -Force
 
 function Write-Step {
     param([string] $Message)
@@ -154,7 +155,13 @@ function Set-VSCodeMcpConfiguration {
 
     $existingServer = $configuration.servers.PSObject.Properties['openzim']
     if ($null -ne $existingServer -and -not $Overwrite) {
-        throw "Le serveur 'openzim' existe deja dans '$configurationPath'. Utilisez -ForceMcpConfig pour le remplacer."
+        $existingJson = $existingServer.Value | ConvertTo-Json -Compress -Depth 20
+        $requestedJson = $server | ConvertTo-Json -Compress -Depth 20
+        if ($existingJson -eq $requestedJson) {
+            Write-Host "Configuration MCP deja a jour : $configurationPath" -ForegroundColor Green
+            return
+        }
+        throw "Le serveur 'openzim' existe deja avec une configuration differente dans '$configurationPath'. Utilisez -ForceMcpConfig pour le remplacer."
     }
 
     if ($null -ne $existingServer) {
@@ -321,6 +328,12 @@ if ($ConfigureVSCode) {
         -UvxPath $uvxPath `
         -ToolMode $Mode `
         -Overwrite $ForceMcpConfig.IsPresent
+
+    Write-Step 'Instructions de recherche locale pour l agent IA'
+    Set-OpenZimProjectInstructions `
+        -WorkspacePath $ProjectDirectory `
+        -Confirm:$false `
+        -WhatIf:$WhatIfPreference | Out-Null
 }
 
 Write-Host "`nInstallation terminee." -ForegroundColor Green

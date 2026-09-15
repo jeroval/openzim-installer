@@ -200,6 +200,7 @@ function Invoke-OpenZimAction {
                 ConfigureVSCode  = $true
                 ProjectDirectory = $ProjectDirectory
                 Mode             = $Mode
+                ForceMcpConfig   = $true
                 Confirm          = $false
             }
         }
