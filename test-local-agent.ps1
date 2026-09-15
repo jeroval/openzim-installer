@@ -22,6 +22,20 @@ function Add-TestResult {
     })
 }
 
+function Add-OptionalModelResult {
+    param([string] $Test, [bool] $Present, [string] $ExpectedModel)
+    $results.Add([pscustomobject]@{
+        Test   = $Test
+        Etat   = if ($Present) { 'PRESENT' } else { 'OPTIONNEL' }
+        Detail = if ($Present) {
+            "Modele detecte : $ExpectedModel"
+        }
+        else {
+            "Modele non installe, sans incidence sur OpenZIM MCP : $ExpectedModel"
+        }
+    })
+}
+
 foreach ($commandName in @('winget.exe', 'uv.exe', 'uvx.exe', 'openzim-mcp.exe', 'curl.exe', 'ollama.exe')) {
     $command = Get-Command $commandName -CommandType Application -ErrorAction SilentlyContinue |
         Select-Object -First 1
@@ -47,7 +61,7 @@ if (Test-Path -LiteralPath $mcpPath) {
     }
 }
 else {
-    Add-TestResult -Test 'Configuration MCP' -Success $false -Detail "Fichier absent : $mcpPath"
+    Add-TestResult -Test 'Configuration MCP' -Success $false -Detail "Fichier absent : $mcpPath (lancez l option 5 pour ce projet)"
 }
 
 $instructionsPath = Join-Path $ProjectDirectory '.github\copilot-instructions.md'
@@ -60,15 +74,21 @@ if (Test-Path -LiteralPath $instructionsPath) {
     Add-TestResult -Test 'Instructions IA OpenZIM' -Success $hasManagedInstructions -Detail $instructionsPath
 }
 else {
-    Add-TestResult -Test 'Instructions IA OpenZIM' -Success $false -Detail "Fichier absent : $instructionsPath"
+    Add-TestResult -Test 'Instructions IA OpenZIM' -Success $false -Detail "Fichier absent : $instructionsPath (lancez l option 5 pour ce projet)"
 }
 
 try {
     $ollama = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 5
     $modelNames = @($ollama.models | ForEach-Object { $_.name })
     Add-TestResult -Test 'Serveur Ollama' -Success $true -Detail ($modelNames -join ', ')
-    Add-TestResult -Test 'GPT-OSS' -Success (@($modelNames -match '^gpt-oss:20b').Count -gt 0) -Detail 'Modele attendu : gpt-oss:20b'
-    Add-TestResult -Test 'Qwen2.5-Coder' -Success (@($modelNames -match '^qwen2\.5-coder:').Count -gt 0) -Detail 'Une variante qwen2.5-coder est attendue'
+    Add-OptionalModelResult `
+        -Test 'GPT-OSS 20B (optionnel)' `
+        -Present (@($modelNames -match '^gpt-oss:20b').Count -gt 0) `
+        -ExpectedModel 'gpt-oss:20b'
+    Add-OptionalModelResult `
+        -Test 'Qwen2.5-Coder (optionnel)' `
+        -Present (@($modelNames -match '^qwen2\.5-coder:14b-instruct-q5_K_M$').Count -gt 0) `
+        -ExpectedModel 'qwen2.5-coder:14b-instruct-q5_K_M'
 }
 catch {
     Add-TestResult -Test 'Serveur Ollama' -Success $false -Detail 'API locale inaccessible sur 127.0.0.1:11434'

@@ -11,6 +11,9 @@ configurer le dossier, le budget, les contenus optionnels, l'installation du
 serveur OpenZIM MCP, les téléchargements et VS Code. Les valeurs sont
 enregistrées automatiquement.
 
+L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B et
+Qwen2.5-Coder 14B sans démarrer de service ni télécharger de modèle.
+
 Consultez [GUIDE-DEBUTANT.md](GUIDE-DEBUTANT.md) pour le parcours pas à pas.
 
 Le dossier proposé par défaut est
@@ -42,6 +45,9 @@ meme source sont mutuellement exclusives.
 
 # 2. Installer uv et OpenZIM MCP
 .\openzim.ps1 -Action Install
+
+# Installer Ollama et les deux modeles locaux (environ 25 Go)
+.\openzim.ps1 -Action InstallAI -InstallGptOss -InstallQwenCoder
 
 # 3. Telecharger les sources principales avec reprise et controle SHA-256
 .\openzim.ps1 -Action Download
@@ -80,6 +86,7 @@ Les archives Dart et Bootstrap sont optionnelles :
 | `Discover` | Exporte les documentations de developpement detectees dans le catalogue OPDS |
 | `Plan` | Selectionne les versions recentes et calcule le volume |
 | `Install` | Installe/met a jour uv et OpenZIM MCP |
+| `InstallAI` | Installe Ollama s'il manque et les modeles IA explicitement choisis |
 | `Download` | Telecharge les archives manquantes et reprend les `.part` |
 | `Update` | Recherche et telecharge les nouvelles editions |
 | `Configure` | Cree ou complete `.vscode/mcp.json` et `.github/copilot-instructions.md` |
@@ -132,6 +139,7 @@ fichier interrompu de la meme edition.
 
 - `openzim.ps1` : point d'entree ;
 - `install-openzim-mcp.ps1` : installation et configuration MCP ;
+- `install-local-ai.ps1` : installation idempotente d'Ollama et des modeles locaux ;
 - `manage-zim-library.ps1` : catalogue, selection, telechargement et mise a jour ;
 - `zim-sources.json` : sources, expressions de selection et categories ;
 - `register-zim-update-task.ps1` : tache planifiee ;

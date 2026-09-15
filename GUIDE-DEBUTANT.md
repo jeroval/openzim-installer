@@ -14,6 +14,10 @@ Vous n'avez aucun fichier JSON à modifier manuellement.
 L'assistant vous demande confirmation avant les téléchargements volumineux et
 avant la création d'une tâche planifiée.
 
+La rubrique **État rapide** détecte Visual Studio Code, Ollama, GPT-OSS 20B et
+Qwen2.5-Coder 14B. Si Ollama est arrêté, les modèles sont indiqués comme non
+vérifiables ; l'écran d'accueil ne démarre aucun service.
+
 ## Ordre conseillé
 
 Le parcours complet réalise les opérations suivantes :
@@ -74,12 +78,13 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 | 3 | Affiche les archives choisies et leur taille, sans les télécharger |
 | 4 | Télécharge le pack avec reprise et contrôles |
 | 5 | Configure automatiquement MCP et les instructions IA du projet VS Code sélectionné |
-| 6 | Vérifie PowerShell, Ollama, les modèles, les ZIM et le serveur MCP |
+| 6 | Vérifie PowerShell, Ollama, les ZIM et MCP ; les modèles GPT-OSS et Qwen sont seulement informatifs |
 | 7 | Affiche les archives déjà présentes |
 | 8 | Recherche et installe les nouvelles versions |
 | 9 | Liste d'autres documentations disponibles chez Kiwix |
 | 10 | Programme une vérification hebdomadaire |
 | 11 | Lance le parcours complet guidé |
+| 12 | Installe Ollama s'il manque, puis les modèles IA choisis s'ils sont absents |
 
 ## Si Windows bloque le lancement
 
@@ -95,6 +100,7 @@ Les commandes restent disponibles pour l'automatisation :
 ```powershell
 .\openzim.ps1 -Action Plan
 .\openzim.ps1 -Action Install
+.\openzim.ps1 -Action InstallAI -InstallGptOss -InstallQwenCoder
 .\openzim.ps1 -Action Download
 .\openzim.ps1 -Action Configure -ProjectDirectory C:\MonProjet
 .\openzim.ps1 -Action Test

@@ -22,7 +22,7 @@ param(
     [string] $ConfigPath,
 
     [Parameter()]
-    [ValidateSet('Install', 'Discover', 'Plan', 'Download', 'Update', 'Configure', 'Status', 'Test', 'RegisterUpdate', 'All')]
+    [ValidateSet('Install', 'InstallAI', 'Discover', 'Plan', 'Download', 'Update', 'Configure', 'Status', 'Test', 'RegisterUpdate', 'All')]
     [string] $Action,
 
     [Parameter()]
@@ -42,6 +42,12 @@ param(
     [switch] $WithReranker,
 
     [Parameter()]
+    [switch] $InstallGptOss,
+
+    [Parameter()]
+    [switch] $InstallQwenCoder,
+
+    [Parameter()]
     [switch] $RemovePrevious,
 
     [Parameter()]
@@ -59,6 +65,7 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
 }
 
 $installer = Join-Path $PSScriptRoot 'install-openzim-mcp.ps1'
+$localAiInstaller = Join-Path $PSScriptRoot 'install-local-ai.ps1'
 $manager = Join-Path $PSScriptRoot 'manage-zim-library.ps1'
 $tester = Join-Path $PSScriptRoot 'test-local-agent.ps1'
 $scheduler = Join-Path $PSScriptRoot 'register-zim-update-task.ps1'
@@ -174,6 +181,13 @@ function Invoke-OpenZimAction {
                 Confirm      = $false
             }
         }
+        'InstallAI' {
+            Invoke-LocalScript -Path $localAiInstaller -Arguments @{
+                GptOss20B   = $InstallGptOss
+                QwenCoder14B = $InstallQwenCoder
+                Confirm      = $false
+            }
+        }
         'Plan' {
             $arguments = $commonManagerArguments.Clone()
             $arguments['Action'] = 'Plan'
@@ -240,12 +254,92 @@ function Invoke-OpenZimAction {
 
 function Show-EnvironmentSummary {
     $openZimCommand = Get-Command openzim-mcp.exe -ErrorAction SilentlyContinue
-    $defaultOpenZimPath = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.local\bin\openzim-mcp.exe'
+    $userProfilePath = [Environment]::GetFolderPath('UserProfile')
+    if ([string]::IsNullOrWhiteSpace($userProfilePath)) {
+        $userProfilePath = $env:USERPROFILE
+    }
+    $defaultOpenZimPath = if ([string]::IsNullOrWhiteSpace($userProfilePath)) {
+        $null
+    }
+    else {
+        Join-Path $userProfilePath '.local\bin\openzim-mcp.exe'
+    }
     $openZimStatus = if ($null -ne $openZimCommand) {
         'installe'
     }
-    elseif (Test-Path -LiteralPath $defaultOpenZimPath -PathType Leaf) {
+    elseif (-not [string]::IsNullOrWhiteSpace($defaultOpenZimPath) -and
+        (Test-Path -LiteralPath $defaultOpenZimPath -PathType Leaf)) {
         'installe (PATH a reparer)'
+    }
+    else {
+        'non installe'
+    }
+
+    $ollamaCommand = Get-Command ollama.exe -CommandType Application -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    $ollamaCandidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $ollamaCandidates += Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+        $ollamaCandidates += Join-Path $env:ProgramFiles 'Ollama\ollama.exe'
+    }
+    $ollamaInstalled =
+        ($null -ne $ollamaCommand) -or
+        (@($ollamaCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }).Count -gt 0)
+
+    $vscodeCommand = Get-Command code.cmd, code.exe -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    $vscodeCandidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $vscodeCandidates += Join-Path $env:LOCALAPPDATA 'Programs\Microsoft VS Code\Code.exe'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+        $vscodeCandidates += Join-Path $env:ProgramFiles 'Microsoft VS Code\Code.exe'
+    }
+    $programFilesX86 = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFilesX86)
+    if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
+        $vscodeCandidates += Join-Path $programFilesX86 'Microsoft VS Code\Code.exe'
+    }
+    $vscodeInstalled =
+        ($null -ne $vscodeCommand) -or
+        (@($vscodeCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }).Count -gt 0)
+
+    $ollamaModels = @()
+    $ollamaApiAvailable = $false
+    if ($ollamaInstalled) {
+        try {
+            $ollamaResponse = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 1
+            $ollamaModels = @($ollamaResponse.models | ForEach-Object { [string] $_.name })
+            $ollamaApiAvailable = $true
+        }
+        catch {
+            # L'ecran d'accueil reste passif : il ne demarre pas Ollama automatiquement.
+        }
+    }
+
+    $gptOssStatus = if (-not $ollamaInstalled) {
+        'non verifiable (Ollama absent)'
+    }
+    elseif (-not $ollamaApiAvailable) {
+        'non verifiable (service Ollama arrete)'
+    }
+    elseif ('gpt-oss:20b' -in $ollamaModels) {
+        'installe'
+    }
+    else {
+        'non installe'
+    }
+
+    $qwenModel = 'qwen2.5-coder:14b-instruct-q5_K_M'
+    $qwenStatus = if (-not $ollamaInstalled) {
+        'non verifiable (Ollama absent)'
+    }
+    elseif (-not $ollamaApiAvailable) {
+        'non verifiable (service Ollama arrete)'
+    }
+    elseif ($qwenModel -in $ollamaModels) {
+        'installe'
     }
     else {
         'non installe'
@@ -256,12 +350,29 @@ function Show-EnvironmentSummary {
         @{ Name = 'WinGet'; Present = if (Get-Command winget.exe -ErrorAction SilentlyContinue) { 'detecte' } else { 'absent' } }
         @{ Name = 'uv'; Present = if (Get-Command uv.exe -ErrorAction SilentlyContinue) { 'installe' } else { 'non installe' } }
         @{ Name = 'OpenZIM MCP'; Present = $openZimStatus }
-        @{ Name = 'Ollama'; Present = if (Get-Command ollama.exe -ErrorAction SilentlyContinue) { 'installe' } else { 'non detecte' } }
+        @{ Name = 'Visual Studio Code'; Present = if ($vscodeInstalled) { 'installe' } else { 'non detecte' } }
+        @{ Name = 'Ollama'; Present = if ($ollamaInstalled) { 'installe' } else { 'non detecte' } }
+        @{ Name = 'GPT-OSS 20B'; Present = $gptOssStatus }
+        @{ Name = 'Qwen2.5-Coder 14B'; Present = $qwenStatus }
     )
     Write-Host 'Etat rapide :' -ForegroundColor Cyan
     foreach ($check in $checks) {
-        Write-Host ('  {0,-14} {1}' -f $check.Name, $check.Present)
+        Write-Host ('  {0,-22} {1}' -f $check.Name, $check.Present)
     }
+}
+
+function Start-LocalAiWizard {
+    Write-Host "`nINSTALLATION DU MOTEUR IA LOCAL" -ForegroundColor Cyan
+    Write-Host 'Ollama sera installe uniquement s il est absent.'
+    Write-Host 'Les modeles deja presents ne seront pas telecharges une seconde fois.'
+    Write-Host ''
+    $script:InstallGptOss = Read-YesNo `
+        -Prompt 'Installer GPT-OSS 20B (environ 14 Go)' `
+        -Default $true
+    $script:InstallQwenCoder = Read-YesNo `
+        -Prompt 'Installer Qwen2.5-Coder 14B Q5_K_M (environ 11 Go)' `
+        -Default $false
+    Invoke-OpenZimAction -RequestedAction 'InstallAI'
 }
 
 function Start-ConfigurationWizard {
@@ -321,7 +432,8 @@ function Start-BeginnerMenu {
         Write-Host '  9. Decouvrir d autres documentations Kiwix'
         Write-Host ' 10. Programmer une mise a jour hebdomadaire'
         Write-Host ' 11. Installation guidee complete'
-        Write-Host '  0. Quitter'
+        Write-Host ' 12. Installer Ollama et les modeles IA locaux'
+        Write-Host ' 13. Quitter'
 
         $rawChoice = Read-Host "`nVotre choix"
         $choice = if ($null -eq $rawChoice) { '' } else { $rawChoice.Trim() }
@@ -364,8 +476,13 @@ function Start-BeginnerMenu {
                         throw "Dossier de projet introuvable : $selectedProject"
                     }
                     $script:ProjectDirectory = (Resolve-Path -LiteralPath $selectedProject).Path
+                    if (Read-YesNo -Prompt 'Installer ou verifier aussi Ollama et les modeles locaux' -Default $true) {
+                        Start-LocalAiWizard
+                    }
                     Invoke-OpenZimAction -RequestedAction 'All'
                 }
+                '12' { Start-LocalAiWizard }
+                '13' { return }
                 '0' { return }
                 default { Write-Host 'Choix invalide.' -ForegroundColor Yellow }
             }
@@ -374,7 +491,7 @@ function Start-BeginnerMenu {
             Write-Host "`nERREUR : $($_.Exception.Message)" -ForegroundColor Red
             Write-Host 'Consultez le dossier .logs pour les details si une operation de bibliotheque avait commence.'
         }
-        if ($choice -ne '0') {
+        if ($choice -notin @('0', '13')) {
             Pause-OpenZim
         }
     }
