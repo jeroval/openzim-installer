@@ -1,0 +1,5 @@
+.logs/
+*.part
+download-plan.json
+zim-inventory.json
+catalog-development-candidates.json

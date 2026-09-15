@@ -1,0 +1,19 @@
+﻿{
+    "libraryRoot":  "C:\\Users\\jeroval\\OpenZIM\\Knowledge\\ZIM",
+    "manifestPath":  "zim-sources.json",
+    "catalogUri":  "https://library.kiwix.org/catalog/v2/entries?lang=eng,fra\u0026count=-1",
+    "maxLibrarySizeGB":  50,
+    "reserveFreeSpaceGB":  5,
+    "mode":  "advanced",
+    "includeOptional":  true,
+    "preferNoPictures":  true,
+    "verifyChecksum":  true,
+    "logs":  {
+                 "directory":  ".logs",
+                 "retentionDays":  14
+             },
+    "download":  {
+                     "retryCount":  10,
+                     "retryDelaySeconds":  5
+                 }
+}

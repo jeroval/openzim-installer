@@ -1,0 +1,54 @@
+[
+  {
+    "id": "stackoverflow-en",
+    "title": "Stack Overflow anglais",
+    "category": "Programming",
+    "pattern": "^stackoverflow\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 1
+  },
+  {
+    "id": "python-peps",
+    "title": "Python PEP",
+    "category": "Programming",
+    "pattern": "^peps\\.python_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 2,
+    "relevance": 98
+  },
+  {
+    "id": "wikipedia-computer",
+    "title": "Wikipedia informatique",
+    "category": "Programming",
+    "pattern": "^wikipedia_en_computer_nopic_[0-9]{4}-[0-9]{2}\\.zim$",
+    "required": true,
+    "priority": 15,
+    "relevance": 75,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 1
+  },
+  {
+    "id": "wikipedia-top",
+    "title": "Wikipedia top",
+    "category": "General",
+    "pattern": "^wikipedia_en_top_nopic_[0-9]{4}-[0-9]{2}\\.zim$",
+    "required": false,
+    "priority": 16,
+    "relevance": 78,
+    "minimumBudgetGB": 40,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 2
+  },
+  {
+    "id": "wikipedia-all-nopic",
+    "title": "Wikipedia complete",
+    "category": "General",
+    "pattern": "^wikipedia_en_all_nopic_[0-9]{4}-[0-9]{2}\\.zim$",
+    "required": false,
+    "priority": 17,
+    "relevance": 72,
+    "minimumBudgetGB": 75,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 3
+  }
+]

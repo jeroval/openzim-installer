@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>Stack Overflow</title>
+    <updated>2026-08-21T18:29:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/stackoverflow.com_en_all_2026-07.zim.meta4"
+          length="114890375168" />
+  </entry>
+  <entry>
+    <title>Python PEP ancien</title>
+    <updated>2023-05-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/peps.python_en_all_2023-05.zim.meta4"
+          length="7340032" />
+  </entry>
+  <entry>
+    <title>Python PEP recent</title>
+    <updated>2024-05-11T14:38:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/peps.python_en_all_2024-05.zim.meta4"
+          length="8388608" />
+  </entry>
+  <entry>
+    <title>Wikipedia informatique</title>
+    <updated>2026-06-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/wikipedia_en_computer_nopic_2026-06.zim.meta4"
+          length="429496729" />
+  </entry>
+  <entry>
+    <title>Wikipedia top</title>
+    <updated>2026-06-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/wikipedia_en_top_nopic_2026-06.zim.meta4"
+          length="2254857830" />
+  </entry>
+  <entry>
+    <title>Wikipedia complete sans images</title>
+    <updated>2026-06-01T00:00:00Z</updated>
+    <link rel="http://opds-spec.org/acquisition/open-access"
+          type="application/x-zim"
+          href="https://example.invalid/wikipedia_en_all_nopic_2026-06.zim.meta4"
+          length="52613349376" />
+  </entry>
+</feed>

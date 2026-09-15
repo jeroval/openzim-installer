@@ -1,0 +1,463 @@
+[
+  {
+    "id": "stackoverflow-en",
+    "title": "Stack Overflow anglais",
+    "category": "Programming",
+    "pattern": "^stackoverflow\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 1,
+    "relevance": 100
+  },
+  {
+    "id": "python-peps",
+    "title": "Python PEP",
+    "category": "Programming",
+    "pattern": "^peps\\.python_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 2,
+    "relevance": 98
+  },
+  {
+    "id": "python-docs",
+    "title": "Documentation Python",
+    "category": "Programming",
+    "pattern": "^docs\\.python\\.org_en(_all)?_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 3,
+    "relevance": 98
+  },
+  {
+    "id": "unix-linux",
+    "title": "Unix & Linux Stack Exchange",
+    "category": "Systems",
+    "pattern": "^unix\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 4,
+    "relevance": 95
+  },
+  {
+    "id": "serverfault",
+    "title": "Server Fault",
+    "category": "Systems",
+    "pattern": "^serverfault\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 5,
+    "relevance": 90
+  },
+  {
+    "id": "superuser",
+    "title": "Super User",
+    "category": "Systems",
+    "pattern": "^superuser\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 6,
+    "relevance": 90
+  },
+  {
+    "id": "askubuntu",
+    "title": "Ask Ubuntu",
+    "category": "Systems",
+    "pattern": "^askubuntu\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 7,
+    "relevance": 88
+  },
+  {
+    "id": "softwareengineering",
+    "title": "Software Engineering Stack Exchange",
+    "category": "Programming",
+    "pattern": "^softwareengineering\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 8,
+    "relevance": 94
+  },
+  {
+    "id": "dba",
+    "title": "Database Administrators Stack Exchange",
+    "category": "Database",
+    "pattern": "^dba\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 9,
+    "relevance": 90
+  },
+  {
+    "id": "security",
+    "title": "Information Security Stack Exchange",
+    "category": "Security",
+    "pattern": "^security\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 10,
+    "relevance": 92
+  },
+  {
+    "id": "devops",
+    "title": "DevOps Stack Exchange",
+    "category": "DevOps",
+    "pattern": "^devops\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 11,
+    "relevance": 92
+  },
+  {
+    "id": "mdn",
+    "title": "Mozilla Developer Network",
+    "category": "Web",
+    "pattern": "^developer\\.mozilla\\.org_en(_all)?_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 12,
+    "relevance": 98
+  },
+  {
+    "id": "open-data-structures",
+    "title": "Open Data Structures",
+    "category": "Programming",
+    "pattern": "^opendatastructures\\.org_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 13,
+    "relevance": 82
+  },
+  {
+    "id": "jeff-erickson-algorithms",
+    "title": "Algorithms — Jeff Erickson",
+    "category": "Programming",
+    "pattern": "^jeffe\\.cs\\.illinois\\.edu_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 14,
+    "relevance": 85
+  },
+  {
+    "id": "wikipedia-computer",
+    "title": "Wikipedia — informatique sans images",
+    "category": "Programming",
+    "pattern": "^wikipedia_en_computer_nopic_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": true,
+    "priority": 15,
+    "relevance": 75,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 1
+  },
+  {
+    "id": "wikipedia-top",
+    "title": "Wikipedia — articles principaux sans images",
+    "category": "General",
+    "pattern": "^wikipedia_en_top_nopic_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 16,
+    "relevance": 78,
+    "minimumBudgetGB": 40,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 2
+  },
+  {
+    "id": "wikipedia-all-nopic",
+    "title": "Wikipedia — complete sans images",
+    "category": "General",
+    "pattern": "^wikipedia_en_all_nopic_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 17,
+    "relevance": 72,
+    "minimumBudgetGB": 75,
+    "exclusiveGroup": "wikipedia-en",
+    "variantRank": 3
+  },
+  {
+    "id": "stackoverflow-fr",
+    "title": "Stack Overflow francais",
+    "category": "Programming",
+    "pattern": "^(fr\\.stackoverflow\\.com|stackoverflow\\.com)_fr_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 20,
+    "relevance": 88,
+    "minimumBudgetGB": 75
+  },
+  {
+    "id": "dart-docs",
+    "title": "Documentation Dart",
+    "category": "Programming",
+    "pattern": "^dart\\.dev_en(_all)?_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 21,
+    "relevance": 55,
+    "minimumBudgetGB": 100
+  },
+  {
+    "id": "bootstrap",
+    "title": "Documentation Bootstrap",
+    "category": "Web",
+    "pattern": "^getbootstrap\\.com_en(_all)?_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 22,
+    "relevance": 55,
+    "minimumBudgetGB": 100
+  },
+  {
+    "id": "code-review",
+    "title": "Code Review Stack Exchange",
+    "category": "Programming",
+    "pattern": "^codereview\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 23,
+    "relevance": 94,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "computer-science",
+    "title": "Computer Science Stack Exchange",
+    "category": "Programming",
+    "pattern": "^cs\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 24,
+    "relevance": 91,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "data-science",
+    "title": "Data Science Stack Exchange",
+    "category": "Programming",
+    "pattern": "^datascience\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 25,
+    "relevance": 90,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "artificial-intelligence",
+    "title": "Artificial Intelligence Stack Exchange",
+    "category": "Programming",
+    "pattern": "^ai\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 26,
+    "relevance": 90,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "generative-ai",
+    "title": "Generative AI Stack Exchange",
+    "category": "Programming",
+    "pattern": "^genai\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 27,
+    "relevance": 88,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "cross-validated",
+    "title": "Cross Validated — statistiques",
+    "category": "Programming",
+    "pattern": "^stats\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 28,
+    "relevance": 86,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "network-engineering",
+    "title": "Network Engineering Stack Exchange",
+    "category": "Systems",
+    "pattern": "^networkengineering\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 29,
+    "relevance": 91,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "reverse-engineering",
+    "title": "Reverse Engineering Stack Exchange",
+    "category": "Security",
+    "pattern": "^reverseengineering\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 30,
+    "relevance": 90,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "cryptography",
+    "title": "Cryptography Stack Exchange",
+    "category": "Security",
+    "pattern": "^crypto\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 31,
+    "relevance": 88,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "electronics",
+    "title": "Electrical Engineering Stack Exchange",
+    "category": "Systems",
+    "pattern": "^electronics\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 32,
+    "relevance": 82,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "raspberry-pi",
+    "title": "Raspberry Pi Stack Exchange",
+    "category": "Systems",
+    "pattern": "^raspberrypi\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 33,
+    "relevance": 84,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "arduino",
+    "title": "Arduino Stack Exchange",
+    "category": "Systems",
+    "pattern": "^arduino\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 34,
+    "relevance": 82,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "robotics",
+    "title": "Robotics Stack Exchange",
+    "category": "Systems",
+    "pattern": "^robotics\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 35,
+    "relevance": 83,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "internet-of-things",
+    "title": "Internet of Things Stack Exchange",
+    "category": "Systems",
+    "pattern": "^iot\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 36,
+    "relevance": 78,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "game-development",
+    "title": "Game Development Stack Exchange",
+    "category": "Programming",
+    "pattern": "^gamedev\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 37,
+    "relevance": 80,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "computer-graphics",
+    "title": "Computer Graphics Stack Exchange",
+    "category": "Programming",
+    "pattern": "^computergraphics\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 38,
+    "relevance": 80,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "theoretical-computer-science",
+    "title": "Theoretical Computer Science Stack Exchange",
+    "category": "Programming",
+    "pattern": "^cstheory\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 39,
+    "relevance": 79,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "bioinformatics",
+    "title": "Bioinformatics Stack Exchange",
+    "category": "Programming",
+    "pattern": "^bioinformatics\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 40,
+    "relevance": 76,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "webmasters",
+    "title": "Webmasters Stack Exchange",
+    "category": "Web",
+    "pattern": "^webmasters\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 41,
+    "relevance": 79,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "software-recommendations",
+    "title": "Software Recommendations Stack Exchange",
+    "category": "Programming",
+    "pattern": "^softwarerecs\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 42,
+    "relevance": 72,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "vi-vim",
+    "title": "Vi and Vim Stack Exchange",
+    "category": "Programming",
+    "pattern": "^vi\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 43,
+    "relevance": 75,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "emacs",
+    "title": "Emacs Stack Exchange",
+    "category": "Programming",
+    "pattern": "^emacs\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 44,
+    "relevance": 72,
+    "minimumBudgetGB": 0
+  },
+  {
+    "id": "mathematica",
+    "title": "Mathematica Stack Exchange",
+    "category": "Programming",
+    "pattern": "^mathematica\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 45,
+    "relevance": 68,
+    "minimumBudgetGB": 75
+  },
+  {
+    "id": "salesforce",
+    "title": "Salesforce Stack Exchange",
+    "category": "Programming",
+    "pattern": "^salesforce\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 46,
+    "relevance": 65,
+    "minimumBudgetGB": 75
+  },
+  {
+    "id": "wordpress",
+    "title": "WordPress Stack Exchange",
+    "category": "Web",
+    "pattern": "^wordpress\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 47,
+    "relevance": 64,
+    "minimumBudgetGB": 75
+  },
+  {
+    "id": "drupal",
+    "title": "Drupal Stack Exchange",
+    "category": "Web",
+    "pattern": "^drupal\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 48,
+    "relevance": 62,
+    "minimumBudgetGB": 75
+  },
+  {
+    "id": "magento",
+    "title": "Magento Stack Exchange",
+    "category": "Web",
+    "pattern": "^magento\\.stackexchange\\.com_en_all_[0-9]{4}-[0-9]{2}[a-z]?\\.zim$",
+    "required": false,
+    "priority": 49,
+    "relevance": 61,
+    "minimumBudgetGB": 75
+  }
+]
