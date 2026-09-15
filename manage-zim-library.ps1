@@ -4,6 +4,29 @@
 .SYNOPSIS
 Decouvre, telecharge et met a jour une bibliotheque ZIM pour un agent local.
 
+.DESCRIPTION
+Lit le catalogue Kiwix et le manifeste `zim-sources.json`, choisit la version
+la plus recente de chaque source pertinente et construit un panier qui ne
+depasse pas le budget. Les variantes `nopic` sont preferees lorsqu'elles sont
+disponibles. Les telechargements incomplets utilisent l'extension `.part` afin
+de pouvoir reprendre apres une interruption.
+
+.PARAMETER Action
+`Plan` calcule sans telecharger. `Download` applique le plan. `Update` recherche
+les nouvelles editions. `Status` inventorie le disque. `Discover` exporte les
+documentations techniques trouvees dans le catalogue.
+
+.PARAMETER MaxLibrarySizeGB
+Plafond strict du panier ZIM. Il ne comprend ni Ollama ni ses modeles.
+
+.PARAMETER IncludeOptional
+Autorise les sources marquees optionnelles, comme certaines documentations de
+frameworks ou langages. Elles restent soumises au budget.
+
+.PARAMETER RemovePrevious
+Apres validation d'une nouvelle edition, supprime l'ancienne edition locale de
+la meme source. Sans ce parametre, les anciennes archives sont conservees.
+
 .EXAMPLE
 .\manage-zim-library.ps1 -Action Plan
 

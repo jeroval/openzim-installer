@@ -4,6 +4,38 @@ Cette boite a outils installe OpenZIM MCP, construit une bibliotheque Kiwix
 classee et configure VS Code. Les telechargements ne sont jamais lances par
 defaut.
 
+## Résultat obtenu
+
+Après le parcours guidé, vous disposez d'un assistant de développement local :
+
+```text
+Question dans VS Code
+        |
+        v
+Extension de chat compatible Ollama et MCP
+        |
+        +----> Ollama exécute GPT-OSS ou Qwen sur votre ordinateur
+        |
+        +----> OpenZIM MCP recherche dans les archives Kiwix locales
+```
+
+Les archives restent sur votre disque et peuvent être consultées sans Internet.
+Le modèle ne lit toutefois pas directement les fichiers `.zim` : l'extension
+de chat de VS Code doit prendre en charge MCP et autoriser les appels d'outils.
+
+## Prérequis
+
+- Windows 10 ou Windows 11 en 64 bits ;
+- PowerShell 5.1 ou version ultérieure ;
+- une connexion Internet pour l'installation et les téléchargements initiaux ;
+- suffisamment d'espace disque : budget ZIM choisi, plus environ 14 Go pour
+  GPT-OSS 20B et 11 Go pour Qwen2.5-Coder 14B si les deux sont installés ;
+- idéalement 16 Go de mémoire vive ou plus pour GPT-OSS 20B. Les performances
+  réelles dépendent fortement du processeur, de la mémoire et du GPU.
+
+Les droits administrateur ne sont normalement pas nécessaires lorsque les
+dossiers proposés par défaut sont conservés.
+
 ## Pour débuter : aucun JSON à modifier
 
 Double-cliquez sur **`Demarrer-OpenZim.cmd`**. Un menu en français permet de
@@ -15,6 +47,28 @@ L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B et
 Qwen2.5-Coder 14B sans démarrer de service ni télécharger de modèle.
 
 Consultez [GUIDE-DEBUTANT.md](GUIDE-DEBUTANT.md) pour le parcours pas à pas.
+
+Dans le menu, saisissez **A** à tout moment pour afficher l'explication du
+parcours complet. La ligne **Conseil** de l'accueil indique automatiquement la
+prochaine étape recommandée.
+
+## Premier lancement conseillé
+
+1. Téléchargez le dépôt GitHub puis décompressez-le dans un dossier permanent.
+2. Double-cliquez sur `Demarrer-OpenZim.cmd`.
+3. Utilisez **1 — Configuration assistée** et conservez le mode `simple` pour
+   commencer.
+4. Utilisez **12** pour installer Ollama et au moins un modèle.
+5. Utilisez **2** pour installer OpenZIM MCP.
+6. Utilisez **3** pour examiner le panier ZIM sans téléchargement.
+7. Utilisez **4** lorsque le volume vous convient.
+8. Créez ou ouvrez votre projet dans VS Code, puis utilisez **5** en indiquant
+   son dossier racine.
+9. Utilisez **6**, rechargez la fenêtre VS Code et réalisez le test décrit dans
+   `LOCAL_AGENT_VALIDATION.md`.
+
+L'option **11 — Installation guidée complète** regroupe ce parcours et conserve
+les demandes de confirmation avant les téléchargements importants.
 
 Le dossier proposé par défaut est
 `%USERPROFILE%\OpenZIM\Knowledge\ZIM`, accessible sans droits administrateur.
@@ -105,6 +159,10 @@ Les archives Dart et Bootstrap sont optionnelles :
   atomique d'un fichier temporaire.
 - L'inventaire conserve l'URL, la date du catalogue, les tailles attendue et
   locale, le chemin et le resultat de validation.
+- Les installateurs sont idempotents : les composants et modèles déjà présents
+  ne sont pas téléchargés une seconde fois.
+- L'accueil ne démarre pas Ollama. Si son service est arrêté, les modèles sont
+  affichés comme non vérifiables plutôt que comme absents.
 
 Executer les tests hors reseau :
 
@@ -153,3 +211,13 @@ Le script peut verifier Ollama, les modeles, les fichiers ZIM et la
 configuration MCP. La preuve qu'un modele choisit effectivement `zim_query`
 doit etre faite dans le chat VS Code : suivez les scenarios de
 `LOCAL_AGENT_VALIDATION.md`.
+
+## Ce que l'outil ne fait pas
+
+- Il n'installe pas automatiquement une extension VS Code particulière, car le
+  choix dépend du client utilisé pour connecter Ollama et MCP.
+- Il ne garantit pas qu'un modèle appellera un outil à chaque question ; les
+  instructions du projet l'y encouragent et le scénario de validation permet de
+  le vérifier.
+- Il ne réduit pas artificiellement les très grandes archives : une source qui
+  dépasse le budget est exclue et expliquée dans le plan.

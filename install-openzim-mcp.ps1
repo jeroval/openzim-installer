@@ -9,6 +9,22 @@ Installe uv avec WinGet si necessaire, installe OpenZIM MCP dans un
 environnement isole, verifie la commande et peut creer la configuration MCP
 du workspace VS Code.
 
+Le script est concu pour etre relance sans danger : uv est reutilise, OpenZIM
+MCP est mis a jour et les autres serveurs presents dans `.vscode/mcp.json`
+sont conserves. Avec `-ConfigureVSCode`, un bloc d'instructions documentaires
+est aussi cree dans `.github/copilot-instructions.md`.
+
+.PARAMETER ZimDirectory
+Dossier racine contenant les archives `.zim`, eventuellement classees dans des
+sous-dossiers.
+
+.PARAMETER ConfigureVSCode
+Configure automatiquement le projet indique par `ProjectDirectory`.
+
+.PARAMETER Mode
+Le mode `simple` expose surtout `zim_query` et convient mieux aux modeles
+locaux. Le mode `advanced` expose davantage d'outils MCP.
+
 .EXAMPLE
 .\install-openzim-mcp.ps1
 
@@ -195,6 +211,17 @@ if ($DownloadRerankerModels -and -not $WithReranker) {
     throw '-DownloadRerankerModels requiert egalement -WithReranker.'
 }
 
+Write-Host '============================================================' -ForegroundColor DarkCyan
+Write-Host '       INSTALLATION DU SERVEUR OPENZIM MCP' -ForegroundColor Cyan
+Write-Host '============================================================' -ForegroundColor DarkCyan
+Write-Host 'uv gere OpenZIM MCP dans un environnement Python isole.'
+Write-Host 'Cette etape ne telecharge aucune archive ZIM.'
+if ($ConfigureVSCode) {
+    Write-Host "Projet a configurer : $ProjectDirectory"
+    Write-Host "Bibliotheque ZIM   : $ZimDirectory"
+    Write-Host "Mode MCP           : $Mode"
+}
+
 Write-Step 'Verification de uv'
 $uvPath = Get-ExecutablePath -Name 'uv.exe'
 
@@ -213,6 +240,9 @@ if ($null -eq $uvPath) {
         Update-SessionPath
         $uvPath = Get-ExecutablePath -Name 'uv.exe'
     }
+}
+else {
+    Write-Host "uv deja installe : $uvPath" -ForegroundColor Green
 }
 
 if ($null -eq $uvPath) {
@@ -249,6 +279,11 @@ if ($toolListExitCode -ne 0 -and -not $noUvToolsInstalled) {
     throw "Impossible de lire la liste des outils uv.`n$installedTools"
 }
 $isInstalled = $installedTools -match '(?m)^openzim-mcp\s'
+Write-Host $(if ($isInstalled) {
+    'OpenZIM MCP est deja gere par uv : recherche d une mise a jour.'
+} else {
+    'OpenZIM MCP n est pas encore gere par uv : installation initiale.'
+}) -ForegroundColor DarkCyan
 
 if ($PSCmdlet.ShouldProcess($requirement, 'Installer ou mettre a jour avec uv')) {
     if ($isInstalled -and -not $WithReranker -and [string]::IsNullOrWhiteSpace($Version)) {
@@ -339,4 +374,5 @@ if ($ConfigureVSCode) {
 Write-Host "`nInstallation terminee." -ForegroundColor Green
 if (-not $ConfigureVSCode) {
     Write-Host "Pour connecter VS Code : .\install-openzim-mcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode"
+    Write-Host 'Dans le menu principal, utilisez ensuite les options 3, 4 et 5.'
 }

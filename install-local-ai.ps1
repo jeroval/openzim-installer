@@ -4,6 +4,19 @@
 .SYNOPSIS
 Installe Ollama et les modeles locaux choisis lorsqu'ils sont absents.
 
+.DESCRIPTION
+Ce script est idempotent : il reutilise Ollama et les modeles deja presents.
+Il ne telecharge un modele que si son nom exact est absent de l'API locale
+Ollama. Les modeles sont stockes par Ollama et ne comptent pas dans le budget
+reserve aux archives ZIM.
+
+.PARAMETER GptOss20B
+Installe `gpt-oss:20b` s'il est absent. Telechargement d'environ 14 Go.
+
+.PARAMETER QwenCoder14B
+Installe `qwen2.5-coder:14b-instruct-q5_K_M` s'il est absent. Telechargement
+d'environ 11 Go.
+
 .EXAMPLE
 .\install-local-ai.ps1 -GptOss20B
 
@@ -47,10 +60,16 @@ function Get-OllamaExecutable {
         return $command.Source
     }
 
-    $candidates = @(
-        (Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe')
-        (Join-Path $env:ProgramFiles 'Ollama\ollama.exe')
-    )
+    # La commande peut ne pas encore etre visible dans PATH juste apres une
+    # installation WinGet. Ces emplacements couvrent les installations Windows
+    # par utilisateur et pour toute la machine.
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        $candidates += Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+        $candidates += Join-Path $env:ProgramFiles 'Ollama\ollama.exe'
+    }
     return $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 }
 
@@ -119,6 +138,16 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Ce script d installation guidee cible Windows.'
 }
 
+Write-Host '============================================================' -ForegroundColor DarkCyan
+Write-Host '       INSTALLATION DU MOTEUR IA LOCAL' -ForegroundColor Cyan
+Write-Host '============================================================' -ForegroundColor DarkCyan
+Write-Host 'Ollama execute les modeles sur votre ordinateur.'
+Write-Host 'Les composants deja installes seront conserves et ignores.'
+Write-Host 'Le volume des modeles est distinct du budget des archives ZIM.'
+Write-Host ('Selection : GPT-OSS 20B = {0} | Qwen Coder 14B = {1}' -f `
+    $(if ($GptOss20B) { 'oui' } else { 'non' }), `
+    $(if ($QwenCoder14B) { 'oui' } else { 'non' }))
+
 $ollamaPath = Get-OllamaExecutable
 if ([string]::IsNullOrWhiteSpace($ollamaPath)) {
     $winget = Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue |
@@ -153,7 +182,14 @@ if ([string]::IsNullOrWhiteSpace($ollamaPath)) {
     return
 }
 
+Write-Step 'Inventaire des modeles Ollama deja installes'
 $installedModels = @(Get-InstalledOllamaModels -OllamaPath $ollamaPath)
+if ($installedModels.Count -eq 0) {
+    Write-Host 'Aucun modele Ollama detecte.' -ForegroundColor Yellow
+}
+else {
+    Write-Host ("Modeles detectes ({0}) : {1}" -f $installedModels.Count, ($installedModels -join ', '))
+}
 if ($GptOss20B) {
     Install-OllamaModelIfMissing `
         -OllamaPath $ollamaPath `
@@ -170,3 +206,4 @@ if ($QwenCoder14B) {
 }
 
 Write-Host "`nInstallation du moteur IA local terminee." -ForegroundColor Green
+Write-Host 'Etape suivante conseillee : installez OpenZIM MCP (option 2), puis preparez les archives (options 3 et 4).'

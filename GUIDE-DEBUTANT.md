@@ -2,6 +2,19 @@
 
 Vous n'avez aucun fichier JSON à modifier manuellement.
 
+## Petit lexique
+
+- **Ollama** : programme qui charge et exécute le modèle IA sur votre ordinateur.
+- **GPT-OSS / Qwen** : modèles qui comprennent votre demande et rédigent la
+  réponse. Vous pouvez installer l'un, l'autre ou les deux.
+- **ZIM** : fichier compressé contenant un site documentaire utilisable hors
+  ligne, par exemple Python, MDN ou une communauté Stack Exchange.
+- **OpenZIM MCP** : serveur local qui permet au chat de rechercher dans les ZIM.
+- **MCP** : protocole par lequel un agent IA demande l'utilisation d'un outil.
+
+En résumé : Ollama fait fonctionner le cerveau, les ZIM contiennent la
+documentation et OpenZIM MCP construit le pont entre les deux.
+
 ## Démarrage
 
 1. Ouvrez le dossier de l'outil dans l'Explorateur Windows.
@@ -10,6 +23,10 @@ Vous n'avez aucun fichier JSON à modifier manuellement.
 4. Appuyez sur Entrée pour accepter les valeurs recommandées.
 5. Choisissez **3 — Voir le plan de téléchargement** avant tout téléchargement.
 6. Si le volume vous convient, choisissez **11 — Installation guidée complète**.
+
+Vous pouvez saisir **A** depuis le menu pour revoir le schéma et le parcours
+recommandé. L'accueil affiche également un **Conseil** calculé à partir des
+composants réellement détectés.
 
 L'assistant vous demande confirmation avant les téléchargements volumineux et
 avant la création d'une tâche planifiée.
@@ -29,6 +46,33 @@ Le parcours complet réalise les opérations suivantes :
 5. création automatique de `.vscode/mcp.json` et des instructions IA dans
    `.github/copilot-instructions.md` dans le projet choisi ;
 6. contrôles de fonctionnement.
+
+### Avant de télécharger
+
+Le budget indiqué concerne uniquement les archives ZIM. Les modèles Ollama
+occupent de l'espace en supplément : environ 14 Go pour GPT-OSS 20B et 11 Go
+pour Qwen2.5-Coder 14B Q5_K_M. L'option 3 est toujours sans gros téléchargement
+et permet de connaître la taille du panier documentaire à l'avance.
+
+### Configuration de votre premier projet
+
+L'option 5 attend le dossier racine du projet, par exemple
+`C:\Projets\MonApplication`, et non le dossier où cet installateur est stocké.
+Elle crée automatiquement :
+
+```text
+C:\Projets\MonApplication\.vscode\mcp.json
+C:\Projets\MonApplication\.github\copilot-instructions.md
+```
+
+Le premier fichier déclare OpenZIM comme outil MCP. Le second demande à l'agent
+de consulter la documentation locale lorsqu'il hésite sur une API, une erreur
+ou une technologie. Les autres serveurs MCP et instructions déjà présents sont
+conservés.
+
+Après cette opération, rechargez la fenêtre VS Code. La disponibilité réelle
+d'OpenZIM dépend de l'extension de chat : elle doit prendre en charge Ollama,
+MCP et les appels d'outils.
 
 ## Valeurs recommandées
 
@@ -85,6 +129,29 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 | 10 | Programme une vérification hebdomadaire |
 | 11 | Lance le parcours complet guidé |
 | 12 | Installe Ollama s'il manque, puis les modèles IA choisis s'ils sont absents |
+| 13 | Ferme proprement l'assistant (`0` reste également accepté) |
+| A | Affiche l'aide et le schéma du parcours local |
+
+## Comprendre les messages courants
+
+| Message | Signification | Action conseillée |
+|---|---|---|
+| `non installé` | Le composant n'a pas été trouvé | Utiliser l'option indiquée par la ligne Conseil |
+| `PATH à réparer` | Le programme existe mais cette session ne trouve pas encore sa commande | Fermer puis relancer l'assistant ; l'option 2 peut aussi réparer le PATH |
+| `service Ollama arrêté` | Ollama est installé mais son API locale ne répond pas | Lancer Ollama ou utiliser l'option 12 |
+| `Projet VS Code à configurer` | Les fichiers MCP ne sont pas dans le projet actuellement sélectionné | Utiliser l'option 5 et choisir le bon dossier |
+| `EXCLU` dans le plan | L'archive dépasserait le budget ou ferait doublon avec une variante choisie | Augmenter le budget seulement si l'espace disque le permet |
+
+## Premier test dans VS Code
+
+Après l'option 6, rechargez VS Code puis demandez par exemple :
+
+> Recherche d'abord dans OpenZIM une explication de cette erreur Python et
+> indique l'archive ou l'article utilisé.
+
+Vérifiez dans le chat qu'un appel à `zim_query` est proposé ou exécuté. Une
+réponse correcte du modèle sans appel d'outil ne prouve pas que la base ZIM a
+été consultée.
 
 ## Si Windows bloque le lancement
 
