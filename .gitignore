@@ -3,3 +3,7 @@
 download-plan.json
 zim-inventory.json
 catalog-development-candidates.json
+
+# Configuration locale generee pour le projet VS Code
+.vscode/mcp.json
+.github/copilot-instructions.md
