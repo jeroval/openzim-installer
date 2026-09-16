@@ -49,6 +49,16 @@ Qwen2.5-Coder 14B, Qwen 3.5 Agent 9B 32K et Devstral Agent 24B sans démarrer de
 service ni télécharger de modèle. Il affiche
 un parcours en quatre étapes pour montrer ce qui est prêt et ce qui reste à faire.
 
+Avant le choix des modèles de l'option 12, l'assistant mesure automatiquement la
+RAM et la VRAM. Il classe chaque modèle comme `RECOMMANDÉ`, `POSSIBLE` ou
+`DÉCONSEILLÉ`, puis propose le choix le plus adapté. Il utilise `nvidia-smi`
+lorsque cet outil est disponible, puis les informations vidéo 64 bits du
+registre Windows et enfin WMI comme dernier recours. Aucune liste de cartes
+graphiques n'est maintenue : la décision repose sur des seuils de RAM et de VRAM
+propres aux quatre modèles proposés. La taille du
+contexte et le déchargement en RAM pouvant modifier les performances, cette
+recommandation reste indicative et l'utilisateur conserve toujours le choix.
+
 Consultez [le guide débutant](docs/Guide-Debutant.md) pour le parcours pas à pas.
 Les choix d'interface sont expliqués dans
 [les principes d'expérience utilisateur](docs/Principes-Experience-Utilisateur.md).

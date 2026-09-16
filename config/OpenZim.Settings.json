@@ -2,7 +2,7 @@
     "libraryRoot":  "C:\\Users\\jeroval\\OpenZIM\\Knowledge\\ZIM",
     "manifestPath":  "ZimSources.json",
     "catalogUri":  "https://library.kiwix.org/catalog/v2/entries?lang=eng,fra\u0026count=-1",
-    "maxLibrarySizeGB":  100,
+    "maxLibrarySizeGB":  200,
     "reserveFreeSpaceGB":  5,
     "mode":  "simple",
     "usageProfile":  "general",

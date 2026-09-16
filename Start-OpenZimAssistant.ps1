@@ -111,7 +111,9 @@ $localAiInstaller = Join-Path $scriptsDirectory 'Install-LocalAi.ps1'
 $manager = Join-Path $scriptsDirectory 'Invoke-ZimLibrary.ps1'
 $tester = Join-Path $scriptsDirectory 'Test-LocalAgent.ps1'
 $scheduler = Join-Path $scriptsDirectory 'Invoke-ZimScheduledTask.ps1'
+$localAiHardwareModule = Join-Path $PSScriptRoot 'modules\LocalAi.Hardware.psm1'
 $scheduledTaskName = 'Local AI - Update Kiwix ZIM Library'
+Import-Module $localAiHardwareModule -Force
 # endregion Initialisation et chemins internes
 
 # region Configuration et saisie utilisateur
@@ -710,10 +712,60 @@ function Start-ScheduledTaskManager {
     }
 }
 
+function Show-LocalAiHardwareRecommendation {
+    Write-Host "`nANALYSE RAPIDE DE VOTRE ORDINATEUR" -ForegroundColor Cyan
+
+    try {
+        $hardware = Get-LocalAiHardwareProfile
+        $ramLabel = if ($null -ne $hardware.RamGB) { "$($hardware.RamGB) Go" } else { 'non detectee' }
+        $vramLabel = if ($null -ne $hardware.VramGB) {
+            "$($hardware.VramGB) Go ($($hardware.VramSource))"
+        }
+        else {
+            'non detectee'
+        }
+        Write-Host "RAM detectee  : $ramLabel"
+        Write-Host "VRAM detectee : $vramLabel"
+
+        if ($null -eq $hardware.RamGB) {
+            Write-Host 'La RAM n a pas pu etre mesuree. Le choix prudent Qwen 3.5 9B reste propose.' -ForegroundColor Yellow
+            return '3'
+        }
+
+        $recommendation = Get-LocalAiRecommendation -RamGB $hardware.RamGB -VramGB $hardware.VramGB
+        Write-Host "`nCompatibilite estimee :" -ForegroundColor DarkCyan
+        foreach ($model in $recommendation.Models) {
+            $color = switch ($model.Status) {
+                'Recommande' { 'Green' }
+                'Possible' { 'Yellow' }
+                default { 'DarkGray' }
+            }
+            Write-Host ("  [{0}] {1}. {2} - {3}" -f `
+                $model.Status.ToUpperInvariant(), $model.Choice, $model.DisplayName, $model.Reason) -ForegroundColor $color
+        }
+
+        if ($recommendation.RecommendedChoice) {
+            Write-Host ("`nChoix conseille : {0} ({1})" -f `
+                $recommendation.RecommendedChoice, $recommendation.RecommendedModel) -ForegroundColor Green
+            return [string] $recommendation.RecommendedChoice
+        }
+
+        Write-Host "`nAucun modele ne correspond confortablement aux ressources detectees." -ForegroundColor Yellow
+        Write-Host 'Vous pouvez conserver le choix 3, mais attendez-vous a un fonctionnement plus lent.' -ForegroundColor Yellow
+        return '3'
+    }
+    catch {
+        Write-Host "Analyse materielle indisponible : $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host 'Le choix prudent Qwen 3.5 9B reste propose.' -ForegroundColor Yellow
+        return '3'
+    }
+}
+
 function Start-LocalAiWizard {
     Write-Host "`nINSTALLATION DU MOTEUR IA LOCAL" -ForegroundColor Cyan
     Write-Host 'Ollama sera installe uniquement s il est absent.'
     Write-Host 'Les modeles deja presents ne seront pas telecharges une seconde fois.'
+    $recommendedChoice = Show-LocalAiHardwareRecommendation
     Write-Host "`nChoisissez un ou plusieurs modeles (exemple : 1,3)." -ForegroundColor DarkCyan
     Write-Host '  1. GPT-OSS 20B - polyvalent et raisonnement (environ 14 Go)'
     Write-Host '  2. Qwen2.5-Coder 14B - generation de code plus legere (environ 11 Go)'
@@ -725,7 +777,7 @@ function Start-LocalAiWizard {
     while ($true) {
         # Qwen 3.5 9B 32K est le meilleur compromis par defaut pour un agent
         # capable d'explorer un depot et d'appeler des outils MCP localement.
-        $selectionText = Read-ValueWithDefault -Prompt 'Votre selection' -Default '3'
+        $selectionText = Read-ValueWithDefault -Prompt 'Votre selection' -Default $recommendedChoice
         $selectedModels = @($selectionText -split '[,; ]+' | Where-Object { $_ })
         $invalidSelections = @($selectedModels | Where-Object { $_ -notin @('0', '1', '2', '3', '4') })
         if ($invalidSelections.Count -eq 0 -and $selectedModels.Count -gt 0 -and
