@@ -26,3 +26,14 @@ une technologie ou un comportement dont tu n'es pas certain :
 - Cite la documentation locale consultee.
 - Signale toute incompatibilite de version detectee.
 - En cas d'echec, identifie d'abord l'erreur racine avant les avertissements.
+
+<!-- openzim-agent-policy:begin -->
+## Politique de dÃ©veloppement gÃ©rÃ©e par OpenZIM
+
+- Applique `.github/instructions/openzim-development-standards.instructions.md`.
+- Inspecte les conventions et les fichiers concernÃ©s avant toute modification.
+- Consulte OpenZIM lorsqu'une API, une syntaxe ou une technologie est incertaine.
+- PrÃ©serve les changements existants et demande confirmation avant une action irrÃ©versible.
+- ExÃ©cute les validations disponibles et ne prÃ©tends jamais avoir exÃ©cutÃ© un test non lancÃ©.
+- Explique toute dÃ©rogation aux standards et termine par un rÃ©sumÃ© des vÃ©rifications.
+<!-- openzim-agent-policy:end -->

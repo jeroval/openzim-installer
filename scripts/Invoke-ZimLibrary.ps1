@@ -5,7 +5,7 @@
 Decouvre, telecharge et met a jour une bibliotheque ZIM pour un agent local.
 
 .DESCRIPTION
-Lit le catalogue Kiwix et le manifeste `zim-sources.json`, choisit la version
+Lit le catalogue Kiwix et le manifeste `config/ZimSources.json`, choisit la version
 la plus recente de chaque source pertinente et construit un panier qui ne
 depasse pas le budget. Les variantes `nopic` sont preferees lorsqu'elles sont
 disponibles. Les telechargements incomplets utilisent l'extension `.part` afin
@@ -28,13 +28,13 @@ Apres validation d'une nouvelle edition, supprime l'ancienne edition locale de
 la meme source. Sans ce parametre, les anciennes archives sont conservees.
 
 .EXAMPLE
-.\manage-zim-library.ps1 -Action Plan
+.\scripts\Invoke-ZimLibrary.ps1 -Action Plan
 
 .EXAMPLE
-.\manage-zim-library.ps1 -Action Download -IncludeOptional
+.\scripts\Invoke-ZimLibrary.ps1 -Action Download -IncludeOptional
 
 .EXAMPLE
-.\manage-zim-library.ps1 -Action Update
+.\scripts\Invoke-ZimLibrary.ps1 -Action Update
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
@@ -78,15 +78,22 @@ param(
     [int] $MaxLibrarySizeGB = 50,
 
     [Parameter()]
+    [ValidateSet('general', 'web', 'systems', 'data-ai', 'security')]
+    [string] $UsageProfile = 'general',
+
+    [Parameter()]
     [switch] $AllowBudgetOverflow
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# region Initialisation de la configuration
+$repositoryRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
-    $ConfigPath = Join-Path $PSScriptRoot 'openzim.config.json'
+    $ConfigPath = Join-Path $repositoryRoot 'config\OpenZim.Settings.json'
 }
-$commonModule = Join-Path $PSScriptRoot 'OpenZim.Common.psm1'
+$commonModule = Join-Path $repositoryRoot 'modules\OpenZim.Common.psm1'
 Import-Module $commonModule -Force
 
 if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
@@ -103,7 +110,7 @@ if (-not $PSBoundParameters.ContainsKey('ManifestPath')) {
         $configuredManifest
     }
     else {
-        Join-Path $PSScriptRoot $configuredManifest
+        Join-Path (Split-Path -Parent $ConfigPath) $configuredManifest
     }
 }
 if (-not $PSBoundParameters.ContainsKey('CatalogUri')) {
@@ -111,6 +118,10 @@ if (-not $PSBoundParameters.ContainsKey('CatalogUri')) {
 }
 if (-not $PSBoundParameters.ContainsKey('MaxLibrarySizeGB')) {
     $MaxLibrarySizeGB = [int] $configuration.maxLibrarySizeGB
+}
+if (-not $PSBoundParameters.ContainsKey('UsageProfile') -and
+    $null -ne $configuration.PSObject.Properties['usageProfile']) {
+    $UsageProfile = [string] $configuration.usageProfile
 }
 if (-not $PSBoundParameters.ContainsKey('IncludeOptional') -and [bool] $configuration.includeOptional) {
     $IncludeOptional = $true
@@ -130,14 +141,16 @@ $logDirectory = if ([IO.Path]::IsPathRooted($configuredLogDirectory)) {
     $configuredLogDirectory
 }
 else {
-    Join-Path $PSScriptRoot $configuredLogDirectory
+    Join-Path $repositoryRoot $configuredLogDirectory
 }
 $logPath = Initialize-OpenZimLog `
     -Directory $logDirectory `
     -RetentionDays ([int] $configuration.logs.retentionDays) `
     -Prefix 'zim-library'
 $categories = @('Programming', 'Web', 'Systems', 'DevOps', 'Database', 'Security', 'General')
+# endregion Initialisation de la configuration
 
+# region Catalogue, selection et telechargement
 function Write-Step {
     param([string] $Message)
     Write-OpenZimLog -Level INFO -Event 'step' -Message $Message
@@ -150,6 +163,29 @@ function Format-ByteSize {
     if ($Bytes -ge 1GB) { return '{0:N2} Go' -f ($Bytes / 1GB) }
     if ($Bytes -ge 1MB) { return '{0:N2} Mo' -f ($Bytes / 1MB) }
     return '{0:N0} octets' -f $Bytes
+}
+
+function Get-ProfileAffinity {
+    param(
+        [Parameter(Mandatory)] [string] $Profile,
+        [Parameter(Mandatory)] [string] $Category
+    )
+
+    # Le score de base exprime l'utilite generale de la source. Ce bonus ne
+    # supprime aucune source : il fait seulement remonter les connaissances les
+    # plus proches du besoin exprime lorsque le budget impose des choix.
+    $bonuses = @{
+        general = @{}
+        web = @{ Web = 30; Programming = 12; Database = 8; Security = 4 }
+        systems = @{ Systems = 30; DevOps = 28; Security = 15; Database = 5 }
+        'data-ai' = @{ Database = 25; Programming = 20; Systems = 5 }
+        security = @{ Security = 35; Systems = 20; DevOps = 10; Programming = 5 }
+    }
+    $profileBonuses = $bonuses[$Profile]
+    if ($null -ne $profileBonuses -and $profileBonuses.ContainsKey($Category)) {
+        return [int] $profileBonuses[$Category]
+    }
+    return 0
 }
 
 function New-LibraryLayout {
@@ -260,6 +296,7 @@ function Get-LatestSelection {
             Required = [bool] $source.required
             Priority = if ($null -ne $source.PSObject.Properties['priority']) { [int] $source.priority } else { 100 }
             Relevance = if ($null -ne $source.PSObject.Properties['relevance']) { [int] $source.relevance } else { 50 }
+            ProfileAffinity = Get-ProfileAffinity -Profile $UsageProfile -Category ([string] $source.category)
             MinimumBudgetGB = $minimumBudgetGB
             ExclusiveGroup = if ($null -ne $source.PSObject.Properties['exclusiveGroup']) { [string] $source.exclusiveGroup } else { '' }
             VariantRank = if ($null -ne $source.PSObject.Properties['variantRank']) { [int] $source.variantRank } else { 0 }
@@ -372,7 +409,9 @@ function Remove-OlderArchives {
             }
         }
 }
+# endregion Catalogue, selection et telechargement
 
+# region Execution de l action demandee
 $mutex = $null
 try {
     $mutex = Enter-OpenZimMutex -Scope ([IO.Path]::GetFullPath($LibraryRoot))
@@ -479,7 +518,7 @@ foreach ($group in $exclusiveGroups) {
 
 $budgetBytes = [long] $MaxLibrarySizeGB * 1GB
 $selectedBytes = 0L
-$budgetSelection = foreach ($item in ($variantSelection | Sort-Object @{ Expression = 'Relevance'; Descending = $true }, Priority, Title)) {
+$budgetSelection = foreach ($item in ($variantSelection | Sort-Object @{ Expression = { $_.Relevance + $_.ProfileAffinity }; Descending = $true }, Priority, Title)) {
     $fitsBudget = ($selectedBytes + $item.Size) -le $budgetBytes
     $included = $AllowBudgetOverflow.IsPresent -or $fitsBudget
     if ($included) {
@@ -493,6 +532,7 @@ $budgetSelection = foreach ($item in ($variantSelection | Sort-Object @{ Express
         Required     = $item.Required
         Priority     = $item.Priority
         Relevance    = $item.Relevance
+        ProfileAffinity = $item.ProfileAffinity
         MinimumBudgetGB = $item.MinimumBudgetGB
         ExclusiveGroup = $item.ExclusiveGroup
         VariantRank  = $item.VariantRank
@@ -521,6 +561,7 @@ $plan = foreach ($item in $budgetSelection) {
     [pscustomobject]@{
         Priorite    = $item.Priority
         Pertinence  = $item.Relevance
+        Affinite     = $item.ProfileAffinity
         Source      = $item.Title
         Category    = $item.Category
         Version     = $item.Updated.ToString('yyyy-MM-dd')
@@ -542,13 +583,14 @@ $plan = foreach ($item in $budgetSelection) {
     }
 }
 
-$plan | Select-Object Priorite, Pertinence, Source, Category, Version, Size, Etat, FileName | Format-Table -AutoSize -Wrap
+$plan | Select-Object Priorite, Pertinence, Affinite, Source, Category, Version, Size, Etat, FileName | Format-Table -AutoSize -Wrap
 $bytesToDownload = ($selection | Where-Object {
     -not (Test-Path -LiteralPath (Join-Path (Join-Path $LibraryRoot $_.Category) $_.FileName))
 } | Measure-Object Size -Sum).Sum
 Write-Host "`nTaille du pack selectionne : $(Format-ByteSize $selectedBytes) / $MaxLibrarySizeGB Go"
 Write-Host "Volume restant a telecharger : $(Format-ByteSize $bytesToDownload)"
 Write-Host "Profil automatique : les variantes et sources sont adaptees au budget de $MaxLibrarySizeGB Go." -ForegroundColor DarkCyan
+Write-Host "Priorite d usage    : $UsageProfile (la colonne Affinite indique le bonus applique)." -ForegroundColor DarkCyan
 if ($excludedSelection.Count -gt 0) {
     Write-Warning "$($excludedSelection.Count) archive(s) exclue(s) pour respecter le budget. Consultez le tableau et download-plan.json."
 }
@@ -651,3 +693,4 @@ finally {
         Exit-OpenZimMutex -Mutex $mutex
     }
 }
+# endregion Execution de l action demandee

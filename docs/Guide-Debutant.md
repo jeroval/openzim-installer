@@ -19,14 +19,15 @@ documentation et OpenZIM MCP construit le pont entre les deux.
 
 1. Ouvrez le dossier de l'outil dans l'Explorateur Windows.
 2. Double-cliquez sur **`Demarrer-OpenZim.cmd`**.
-3. Dans le menu, choisissez **1 — Configuration assistée**.
-4. Appuyez sur Entrée pour accepter les valeurs recommandées.
+3. Dans le menu, choisissez **1 — Définir vos besoins et contraintes**.
+4. Choisissez l'usage le plus proche de vos projets, puis acceptez ou adaptez
+   les valeurs recommandées.
 5. Choisissez **3 — Voir le plan de téléchargement** avant tout téléchargement.
 6. Si le volume vous convient, choisissez **11 — Installation guidée complète**.
 
 Vous pouvez saisir **A** depuis le menu pour revoir le schéma et le parcours
 recommandé. L'accueil affiche également un **Conseil** calculé à partir des
-composants réellement détectés.
+composants réellement détectés, ainsi qu'un parcours en quatre étapes.
 
 L'assistant vous demande confirmation avant les téléchargements volumineux et
 avant la création d'une tâche planifiée.
@@ -63,12 +64,24 @@ Elle crée automatiquement :
 ```text
 C:\Projets\MonApplication\.vscode\mcp.json
 C:\Projets\MonApplication\.github\copilot-instructions.md
+C:\Projets\MonApplication\.github\instructions\openzim-development-standards.instructions.md
+C:\Projets\MonApplication\AGENTS.md
+C:\Projets\MonApplication\docs\ai\Guide-Bonnes-Pratiques-Code.md
 ```
 
 Le premier fichier déclare OpenZIM comme outil MCP. Le second demande à l'agent
-de consulter la documentation locale lorsqu'il hésite sur une API, une erreur
-ou une technologie. Les autres serveurs MCP et instructions déjà présents sont
-conservés.
+de consulter la documentation locale. Les autres fichiers imposent le socle
+commun de nommage, conception, sécurité, tests, documentation et méthode de
+travail. Les autres serveurs MCP et instructions déjà présents sont conservés.
+
+L'option 5 complète également le `.gitignore` sans supprimer ses règles. Les
+fichiers `.vscode/mcp.json` et `.github/copilot-instructions.md` restent locaux,
+car le premier contient des chemins propres à l'ordinateur et le second suit la
+préférence locale de cet assistant. Les archives `*.zim`, téléchargements
+partiels, plans et inventaires locaux sont également exclus. En revanche,
+`AGENTS.md`, le guide et les
+standards `.github/instructions` restent versionnables : ils constituent les
+règles partagées du projet.
 
 Après cette opération, rechargez la fenêtre VS Code. La disponibilité réelle
 d'OpenZIM dépend de l'extension de chat : elle doit prendre en charge Ollama,
@@ -87,9 +100,16 @@ Il évite d'avoir besoin des droits administrateur pour créer `C:\AI`.
 ## Sélection intelligente selon le budget
 
 Le budget est un plafond strict, pas une taille à atteindre obligatoirement.
-L'assistant classe les sources par pertinence pour le développement, retient la
+L'assistant classe les sources par pertinence pour le développement et par
+affinité avec votre usage, puis retient la
 version la plus récente et ajoute les archives tant qu'elles tiennent dans le
 plafond.
+
+Les cinq profils disponibles sont : développement polyvalent, Web et
+applications, systèmes/réseaux/DevOps, données/IA et sécurité. Le profil ne
+supprime pas arbitrairement les autres domaines : il leur applique un bonus de
+priorité lorsque le budget oblige à choisir. La colonne `Affinite` du plan rend
+ce choix visible.
 
 - Avec **50 Go**, il privilégie Python, le Web, les petites communautés Stack
   Exchange, les systèmes, la sécurité et une Wikipédia compacte.
@@ -117,7 +137,7 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 
 | Choix | Fonction |
 |---:|---|
-| 1 | Modifie la configuration par questions/réponses |
+| 1 | Définit l'usage, le stockage, le budget et le mode par questions/réponses |
 | 2 | Installe ou met à jour OpenZIM MCP |
 | 3 | Affiche les archives choisies et leur taille, sans les télécharger |
 | 4 | Télécharge le pack avec reprise et contrôles |
@@ -126,8 +146,8 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 | 7 | Affiche les archives déjà présentes |
 | 8 | Recherche et installe les nouvelles versions |
 | 9 | Liste d'autres documentations disponibles chez Kiwix |
-| 10 | Programme une vérification hebdomadaire |
-| 11 | Lance le parcours complet guidé |
+| 10 | Ouvre le gestionnaire de tâche : créer, vérifier, tester ou supprimer |
+| 11 | Lance le parcours guidé avec prévisualisation du panier avant téléchargement |
 | 12 | Installe Ollama s'il manque, puis les modèles IA choisis s'ils sont absents |
 | 13 | Ferme proprement l'assistant (`0` reste également accepté) |
 | A | Affiche l'aide et le schéma du parcours local |
@@ -165,12 +185,12 @@ modifie pas la configuration globale de PowerShell.
 Les commandes restent disponibles pour l'automatisation :
 
 ```powershell
-.\openzim.ps1 -Action Plan
-.\openzim.ps1 -Action Install
-.\openzim.ps1 -Action InstallAI -InstallGptOss -InstallQwenCoder
-.\openzim.ps1 -Action Download
-.\openzim.ps1 -Action Configure -ProjectDirectory C:\MonProjet
-.\openzim.ps1 -Action Test
+.\Start-OpenZimAssistant.ps1 -Action Plan
+.\Start-OpenZimAssistant.ps1 -Action Install
+.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallGptOss -InstallQwenCoder
+.\Start-OpenZimAssistant.ps1 -Action Download
+.\Start-OpenZimAssistant.ps1 -Action Configure -ProjectDirectory C:\MonProjet
+.\Start-OpenZimAssistant.ps1 -Action Test
 ```
 
 Cette section est facultative : le menu suffit pour l'utilisation normale.

@@ -1,12 +1,12 @@
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$managerPath = Join-Path $projectRoot 'manage-zim-library.ps1'
-$modulePath = Join-Path $projectRoot 'OpenZim.Common.psm1'
+$managerPath = Join-Path $projectRoot 'scripts\Invoke-ZimLibrary.ps1'
+$modulePath = Join-Path $projectRoot 'modules\OpenZim.Common.psm1'
 $catalogFixture = Join-Path $PSScriptRoot 'fixtures\catalog.xml'
 $sourcesFixture = Join-Path $PSScriptRoot 'fixtures\sources.json'
 
 Describe 'Scripts PowerShell' {
     It 'ne contient aucune erreur de syntaxe' {
-        $scripts = Get-ChildItem -LiteralPath $projectRoot -Filter '*.ps1' -File
+        $scripts = Get-ChildItem -LiteralPath $projectRoot -Filter '*.ps1' -File -Recurse
         foreach ($script in $scripts) {
             $tokens = $null
             $errors = $null
@@ -24,7 +24,7 @@ Describe 'Scripts PowerShell' {
 
 Describe 'Manifest des sources' {
     It 'contient des identifiants et priorites uniques' {
-        $parsedSources = Get-Content (Join-Path $projectRoot 'zim-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $parsedSources = Get-Content (Join-Path $projectRoot 'config\ZimSources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $sources = @($parsedSources | ForEach-Object { $_ })
         if (@($sources.id | Group-Object | Where-Object Count -GT 1).Count -ne 0) {
             throw 'Le manifest contient des identifiants dupliques.'
@@ -35,7 +35,7 @@ Describe 'Manifest des sources' {
     }
 
     It 'contient le panier Stack Exchange technique filtre' {
-        $parsedSources = Get-Content (Join-Path $projectRoot 'zim-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $parsedSources = Get-Content (Join-Path $projectRoot 'config\ZimSources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
         $sourceIds = @($parsedSources | ForEach-Object { $_.id })
         $expectedIds = @(
             'code-review', 'computer-science', 'data-science',
@@ -147,6 +147,58 @@ Describe 'Selection hors reseau et budget' {
     }
 }
 
+Describe 'Personnalisation centree sur l usage' {
+    It 'priorise la categorie correspondant au profil lorsque le budget impose un choix' {
+        $profileRoot = Join-Path $TestDrive 'profile-library'
+        $profileManifest = Join-Path $TestDrive 'profile-sources.json'
+        $profileCatalog = Join-Path $TestDrive 'profile-catalog.xml'
+        $profileConfig = Join-Path $TestDrive 'profile-config.json'
+
+        @(
+            @{ id = 'systems-doc'; title = 'Documentation systemes'; category = 'Systems'; pattern = '^systems_en_all_2026-01\.zim$'; required = $true; priority = 1; relevance = 50 },
+            @{ id = 'web-doc'; title = 'Documentation Web'; category = 'Web'; pattern = '^web_en_all_2026-01\.zim$'; required = $true; priority = 2; relevance = 50 }
+        ) | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $profileManifest -Encoding UTF8
+
+        @'
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry><title>Systemes</title><updated>2026-01-01T00:00:00Z</updated><link rel="http://opds-spec.org/acquisition/open-access" type="application/x-zim" href="https://example.invalid/systems_en_all_2026-01.zim.meta4" length="751619276" /></entry>
+  <entry><title>Web</title><updated>2026-01-01T00:00:00Z</updated><link rel="http://opds-spec.org/acquisition/open-access" type="application/x-zim" href="https://example.invalid/web_en_all_2026-01.zim.meta4" length="751619276" /></entry>
+</feed>
+'@ | Set-Content -LiteralPath $profileCatalog -Encoding UTF8
+
+        @{
+            libraryRoot = $profileRoot
+            manifestPath = $profileManifest
+            catalogUri = 'https://example.invalid/catalog'
+            maxLibrarySizeGB = 1
+            reserveFreeSpaceGB = 0
+            mode = 'simple'
+            includeOptional = $false
+            preferNoPictures = $true
+            verifyChecksum = $true
+            logs = @{ directory = (Join-Path $TestDrive 'profile-logs'); retentionDays = 1 }
+            download = @{ retryCount = 1; retryDelaySeconds = 1 }
+        } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $profileConfig -Encoding UTF8
+
+        & $managerPath -Action Plan -ConfigPath $profileConfig -CatalogFile $profileCatalog `
+            -ManifestPath $profileManifest -LibraryRoot $profileRoot -MaxLibrarySizeGB 1 `
+            -UsageProfile web -Confirm:$false
+
+        $profilePlan = @(Get-Content (Join-Path $profileRoot 'download-plan.json') -Raw -Encoding UTF8 |
+            ConvertFrom-Json | ForEach-Object { $_ })
+        if (($profilePlan | Where-Object Source -EQ 'Documentation Web').Included -ne $true) {
+            throw 'Le profil Web aurait du inclure la documentation Web en premier.'
+        }
+        if (($profilePlan | Where-Object Source -EQ 'Documentation systemes').Included -ne $false) {
+            throw 'La documentation systemes aurait du etre exclue faute de place.'
+        }
+        if (($profilePlan | Where-Object Source -EQ 'Documentation Web').Affinite -le 0) {
+            throw "Le bonus d'affinite Web n'apparait pas dans le plan."
+        }
+    }
+}
+
 Describe 'Journalisation structuree' {
     It 'ecrit une ligne JSON exploitable' {
         Import-Module $modulePath -Force
@@ -171,6 +223,8 @@ Describe 'Instructions IA du projet' {
         New-Item -ItemType Directory -Path $githubDirectory -Force | Out-Null
         $instructionsPath = Join-Path $githubDirectory 'copilot-instructions.md'
         [IO.File]::WriteAllText($instructionsPath, "# Regles du projet`r`n", [Text.UTF8Encoding]::new($false))
+        $gitIgnorePath = Join-Path $workspace '.gitignore'
+        [IO.File]::WriteAllText($gitIgnorePath, "# Regles existantes`r`n.env`r`n", [Text.UTF8Encoding]::new($false))
 
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
@@ -184,6 +238,35 @@ Describe 'Instructions IA du projet' {
         }
         if (-not $content.Contains('zim_query')) {
             throw "L'instruction d'utiliser zim_query est absente."
+        }
+
+        $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
+        $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
+        $agentsPath = Join-Path $workspace 'AGENTS.md'
+        foreach ($generatedPath in @($standardsPath, $guidePath, $agentsPath)) {
+            if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
+                throw "Fichier de standards absent : $generatedPath"
+            }
+        }
+        $standards = [IO.File]::ReadAllText($standardsPath)
+        if ($standards -notmatch 'applyTo:\s*[''\"]\*\*[''\"]' -or
+            [regex]::Matches($standards, '<!-- openzim-standards:begin -->').Count -ne 1) {
+            throw 'Le fichier de standards IA est invalide ou duplique.'
+        }
+        if (-not ([IO.File]::ReadAllText($agentsPath)).Contains('<!-- openzim-agent-policy:begin -->')) {
+            throw 'La politique AGENTS.md geree est absente.'
+        }
+
+        $gitIgnore = [IO.File]::ReadAllText($gitIgnorePath)
+        if (-not $gitIgnore.Contains('.env') -or
+            -not $gitIgnore.Contains('.vscode/mcp.json') -or
+            -not $gitIgnore.Contains('.github/copilot-instructions.md') -or
+            -not $gitIgnore.Contains('*.zim') -or
+            -not $gitIgnore.Contains('zim-inventory.json')) {
+            throw 'Les regles Git existantes ou locales OpenZIM sont absentes.'
+        }
+        if ([regex]::Matches($gitIgnore, '# openzim-local:begin').Count -ne 1) {
+            throw 'Le bloc Git local OpenZIM a ete duplique.'
         }
     }
 
@@ -207,7 +290,7 @@ Describe 'Premier lancement' {
         New-Item -ItemType Directory -Path $emptyLibrary -Force | Out-Null
         $statusOutput = & $managerPath `
             -Action Status `
-            -ConfigPath (Join-Path $projectRoot 'openzim.config.json') `
+            -ConfigPath (Join-Path $projectRoot 'config\OpenZim.Settings.json') `
             -LibraryRoot $emptyLibrary 6>&1 | Out-String
 
         if ($statusOutput -notmatch '0 archive\(s\)') {

@@ -3,7 +3,7 @@
 ## 1. Controle automatique
 
 ```powershell
-.\test-local-agent.ps1 -LibraryRoot 'C:\AI\Knowledge\ZIM'
+.\scripts\Test-LocalAgent.ps1 -LibraryRoot 'C:\AI\Knowledge\ZIM'
 ```
 
 Le controle verifie les executables, les archives ZIM, `.vscode/mcp.json`,
@@ -13,7 +13,7 @@ Pour produire une liste des autres documentations de developpement detectees
 dans le catalogue Kiwix :
 
 ```powershell
-.\openzim.ps1 -Action Discover
+.\Start-OpenZimAssistant.ps1 -Action Discover
 ```
 
 ## 2. Controle MCP dans VS Code
@@ -64,7 +64,7 @@ desactiver vos interfaces reseau sans confirmation explicite.
 Afficher d'abord le plan :
 
 ```powershell
-.\manage-zim-library.ps1 -Action Plan
+.\scripts\Invoke-ZimLibrary.ps1 -Action Plan
 ```
 
 Le plan applique par defaut une limite de 50 Go et explique toute exclusion.
@@ -72,13 +72,13 @@ Le plan applique par defaut une limite de 50 Go et explique toute exclusion.
 Mettre a jour immediatement :
 
 ```powershell
-.\manage-zim-library.ps1 -Action Update
+.\scripts\Invoke-ZimLibrary.ps1 -Action Update
 ```
 
 Enregistrer une verification hebdomadaire :
 
 ```powershell
-.\register-zim-update-task.ps1 -DayOfWeek Sunday -At '03:00'
+.\scripts\Invoke-ZimScheduledTask.ps1 -DayOfWeek Sunday -At '03:00'
 ```
 
 Pour supprimer les anciennes editions seulement apres validation de la

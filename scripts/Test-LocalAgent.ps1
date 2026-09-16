@@ -13,6 +13,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $results = [Collections.Generic.List[object]]::new()
 
+# region Construction du rapport de diagnostic
 function Add-TestResult {
     param([string] $Test, [bool] $Success, [string] $Detail)
     $results.Add([pscustomobject]@{
@@ -35,7 +36,9 @@ function Add-OptionalModelResult {
         }
     })
 }
+# endregion Construction du rapport de diagnostic
 
+# region Verification des composants locaux
 foreach ($commandName in @('winget.exe', 'uv.exe', 'uvx.exe', 'openzim-mcp.exe', 'curl.exe', 'ollama.exe')) {
     $command = Get-Command $commandName -CommandType Application -ErrorAction SilentlyContinue |
         Select-Object -First 1
@@ -77,6 +80,22 @@ else {
     Add-TestResult -Test 'Instructions IA OpenZIM' -Success $false -Detail "Fichier absent : $instructionsPath (lancez l option 5 pour ce projet)"
 }
 
+$standardsPath = Join-Path $ProjectDirectory '.github\instructions\openzim-development-standards.instructions.md'
+$guidePath = Join-Path $ProjectDirectory 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
+$agentsPath = Join-Path $ProjectDirectory 'AGENTS.md'
+$standardsReady =
+    (Test-Path -LiteralPath $standardsPath -PathType Leaf) -and
+    (Test-Path -LiteralPath $guidePath -PathType Leaf) -and
+    (Test-Path -LiteralPath $agentsPath -PathType Leaf)
+Add-TestResult -Test 'Standards de code IA' -Success $standardsReady -Detail $(
+    if ($standardsReady) {
+        "Instructions, guide et politique multi-agent installes dans $ProjectDirectory"
+    }
+    else {
+        'Fichiers incomplets : relancez l option 5 pour ce projet'
+    }
+)
+
 try {
     $ollama = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 5
     $modelNames = @($ollama.models | ForEach-Object { $_.name })
@@ -98,3 +117,4 @@ $results | Format-Table -AutoSize -Wrap
 if (@($results | Where-Object { $_.Etat -eq 'ECHEC' }).Count -gt 0) {
     exit 1
 }
+# endregion Verification des composants locaux

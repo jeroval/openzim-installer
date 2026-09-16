@@ -26,16 +26,16 @@ Le mode `simple` expose surtout `zim_query` et convient mieux aux modeles
 locaux. Le mode `advanced` expose davantage d'outils MCP.
 
 .EXAMPLE
-.\install-openzim-mcp.ps1
+.\scripts\Install-OpenZimMcp.ps1
 
 .EXAMPLE
-.\install-openzim-mcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode
+.\scripts\Install-OpenZimMcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode
 
 .EXAMPLE
-.\install-openzim-mcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode -Mode advanced
+.\scripts\Install-OpenZimMcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode -Mode advanced
 
 .EXAMPLE
-.\install-openzim-mcp.ps1 -WithReranker -DownloadRerankerModels
+.\scripts\Install-OpenZimMcp.ps1 -WithReranker -DownloadRerankerModels
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
@@ -71,8 +71,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'OpenZim.Common.psm1') -Force
+$repositoryRoot = Split-Path -Parent $PSScriptRoot
+Import-Module (Join-Path $repositoryRoot 'modules\OpenZim.Common.psm1') -Force
 
+# region Fonctions utilitaires
 function Write-Step {
     param([string] $Message)
     Write-Host "`n==> $Message" -ForegroundColor Cyan
@@ -202,7 +204,9 @@ function Set-VSCodeMcpConfiguration {
         Write-Host "Configuration MCP ecrite : $configurationPath" -ForegroundColor Green
     }
 }
+# endregion Fonctions utilitaires
 
+# region Installation et configuration
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Ce script cible Windows. Consultez la documentation OpenZIM MCP pour macOS ou Linux.'
 }
@@ -373,6 +377,7 @@ if ($ConfigureVSCode) {
 
 Write-Host "`nInstallation terminee." -ForegroundColor Green
 if (-not $ConfigureVSCode) {
-    Write-Host "Pour connecter VS Code : .\install-openzim-mcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode"
+    Write-Host "Pour connecter VS Code : .\scripts\Install-OpenZimMcp.ps1 -ZimDirectory 'D:\Kiwix\ZIM' -ConfigureVSCode"
     Write-Host 'Dans le menu principal, utilisez ensuite les options 3, 4 et 5.'
 }
+# endregion Installation et configuration

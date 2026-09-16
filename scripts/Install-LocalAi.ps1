@@ -18,10 +18,10 @@ Installe `qwen2.5-coder:14b-instruct-q5_K_M` s'il est absent. Telechargement
 d'environ 11 Go.
 
 .EXAMPLE
-.\install-local-ai.ps1 -GptOss20B
+.\scripts\Install-LocalAi.ps1 -GptOss20B
 
 .EXAMPLE
-.\install-local-ai.ps1 -GptOss20B -QwenCoder14B
+.\scripts\Install-LocalAi.ps1 -GptOss20B -QwenCoder14B
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
@@ -36,6 +36,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# region Fonctions utilitaires
 function Write-Step {
     param([Parameter(Mandatory)] [string] $Message)
     Write-Host "`n==> $Message" -ForegroundColor Cyan
@@ -133,7 +134,9 @@ function Install-OllamaModelIfMissing {
         Write-Host "Modele installe : $Model" -ForegroundColor Green
     }
 }
+# endregion Fonctions utilitaires
 
+# region Installation de Ollama et des modeles
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'Ce script d installation guidee cible Windows.'
 }
@@ -207,3 +210,4 @@ if ($QwenCoder14B) {
 
 Write-Host "`nInstallation du moteur IA local terminee." -ForegroundColor Green
 Write-Host 'Etape suivante conseillee : installez OpenZIM MCP (option 2), puis preparez les archives (options 3 et 4).'
+# endregion Installation de Ollama et des modeles
