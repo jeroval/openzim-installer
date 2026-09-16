@@ -1,0 +1,6 @@
+# Profil local optimise pour un agent de developpement sous VS Code.
+# La limite 32K evite que le client reserve automatiquement un contexte 128K+
+# trop lourd pour les cartes graphiques grand public.
+FROM qwen3.5:9b-q4_K_M
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.2

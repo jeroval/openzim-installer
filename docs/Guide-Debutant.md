@@ -33,8 +33,9 @@ L'assistant vous demande confirmation avant les téléchargements volumineux et
 avant la création d'une tâche planifiée.
 
 La rubrique **État rapide** détecte Visual Studio Code, Ollama, GPT-OSS 20B,
-Qwen2.5-Coder 14B et Devstral Agent 24B. Si Ollama est arrêté, les modèles sont
-indiqués comme non vérifiables ; l'écran d'accueil ne démarre aucun service.
+Qwen2.5-Coder 14B, Qwen 3.5 Agent 9B 32K et Devstral Agent 24B. Si Ollama est
+arrêté, les modèles sont indiqués comme non vérifiables ; l'écran d'accueil ne
+démarre aucun service.
 
 ## Ordre conseillé
 
@@ -52,10 +53,11 @@ Le parcours complet réalise les opérations suivantes :
 
 Le budget indiqué concerne uniquement les archives ZIM. Les modèles Ollama
 occupent de l'espace en supplément : environ 14 Go pour GPT-OSS 20B, 11 Go
-pour Qwen2.5-Coder 14B Q5_K_M et 15 Go pour Devstral Small 2 24B Q4_K_M.
-Devstral est le choix recommandé pour le code agentique et l'utilisation
-d'outils. L'option 3 est toujours sans gros téléchargement et permet de
-connaître la taille du panier documentaire à l'avance.
+pour Qwen2.5-Coder 14B Q5_K_M, 6,6 Go pour Qwen 3.5 Agent 9B et 15 Go pour
+Devstral Small 2 24B. Qwen 3.5 Agent est le choix recommandé : son profil 32K
+est créé automatiquement pour limiter la mémoire utilisée dans VS Code.
+L'option 3 reste sans gros téléchargement et permet de connaître la taille du
+panier documentaire à l'avance.
 
 ### Configuration de votre premier projet
 

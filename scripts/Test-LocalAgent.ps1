@@ -185,6 +185,10 @@ try {
         -Present (@($modelNames -match '^qwen2\.5-coder:14b-instruct-q5_K_M$').Count -gt 0) `
         -ExpectedModel 'qwen2.5-coder:14b-instruct-q5_K_M'
     Add-OptionalModelResult `
+        -Test 'Qwen 3.5 Agent 9B 32K (recommande)' `
+        -Present ('qwen3.5-code-agent:9b-32k' -in $modelNames) `
+        -ExpectedModel 'qwen3.5-code-agent:9b-32k'
+    Add-OptionalModelResult `
         -Test 'Devstral Agent 24B (optionnel)' `
         -Present (@($modelNames -match '^devstral-small-2:24b-instruct-2512-q4_K_M$').Count -gt 0) `
         -ExpectedModel 'devstral-small-2:24b-instruct-2512-q4_K_M'

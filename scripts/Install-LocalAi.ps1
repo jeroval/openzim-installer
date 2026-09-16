@@ -17,6 +17,11 @@ Installe `gpt-oss:20b` s'il est absent. Telechargement d'environ 14 Go.
 Installe `qwen2.5-coder:14b-instruct-q5_K_M` s'il est absent. Telechargement
 d'environ 11 Go.
 
+.PARAMETER Qwen35Agent9B
+Installe `qwen3.5:9b-q4_K_M`, puis cree le profil local
+`qwen3.5-code-agent:9b-32k`. Ce profil limite automatiquement le contexte a
+32768 tokens pour reduire la consommation de VRAM dans VS Code.
+
 .PARAMETER DevstralAgent24B
 Installe `devstral-small-2:24b-instruct-2512-q4_K_M` s'il est absent.
 Ce modele d'environ 15 Go est specialise dans le code agentique, l'exploration
@@ -26,7 +31,7 @@ de depots, les modifications multi-fichiers et l'utilisation d'outils.
 .\scripts\Install-LocalAi.ps1 -GptOss20B
 
 .EXAMPLE
-.\scripts\Install-LocalAi.ps1 -DevstralAgent24B
+.\scripts\Install-LocalAi.ps1 -Qwen35Agent9B
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
@@ -38,11 +43,17 @@ param(
     [switch] $QwenCoder14B,
 
     [Parameter()]
+    [switch] $Qwen35Agent9B,
+
+    [Parameter()]
     [switch] $DevstralAgent24B
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$qwen35BaseModel = 'qwen3.5:9b-q4_K_M'
+$qwen35AgentProfile = 'qwen3.5-code-agent:9b-32k'
+$qwen35ModelfilePath = Join-Path $PSScriptRoot '..\config\Modelfile.Qwen35CodeAgent'
 
 # region Fonctions utilitaires
 function Write-Step {
@@ -142,6 +153,31 @@ function Install-OllamaModelIfMissing {
         Write-Host "Modele installe : $Model" -ForegroundColor Green
     }
 }
+
+function Install-OllamaProfileIfMissing {
+    param(
+        [Parameter(Mandatory)] [string] $OllamaPath,
+        [Parameter(Mandatory)] [string] $Profile,
+        [Parameter(Mandatory)] [string] $ModelfilePath,
+        [Parameter(Mandatory)] [string[]] $InstalledModels
+    )
+
+    if ($Profile -in $InstalledModels) {
+        Write-Host "Profil Ollama deja installe : $Profile" -ForegroundColor Green
+        return
+    }
+    if (-not (Test-Path -LiteralPath $ModelfilePath -PathType Leaf)) {
+        throw "Modelfile du profil Qwen 3.5 introuvable : $ModelfilePath"
+    }
+
+    if ($PSCmdlet.ShouldProcess($Profile, 'Creer le profil Ollama agentique avec contexte 32K')) {
+        Write-Step "Creation du profil $Profile"
+        Invoke-NativeCommand -FilePath $OllamaPath -ArgumentList @(
+            'create', $Profile, '-f', (Resolve-Path -LiteralPath $ModelfilePath).Path
+        )
+        Write-Host "Profil agentique installe : $Profile" -ForegroundColor Green
+    }
+}
 # endregion Fonctions utilitaires
 
 # region Installation de Ollama et des modeles
@@ -155,9 +191,10 @@ Write-Host '============================================================' -Foreg
 Write-Host 'Ollama execute les modeles sur votre ordinateur.'
 Write-Host 'Les composants deja installes seront conserves et ignores.'
 Write-Host 'Le volume des modeles est distinct du budget des archives ZIM.'
-Write-Host ('Selection : GPT-OSS 20B = {0} | Qwen Coder 14B = {1} | Devstral Agent 24B = {2}' -f `
+Write-Host ('Selection : GPT-OSS 20B = {0} | Qwen Coder 14B = {1} | Qwen 3.5 Agent 9B = {2} | Devstral Agent 24B = {3}' -f `
     $(if ($GptOss20B) { 'oui' } else { 'non' }), `
     $(if ($QwenCoder14B) { 'oui' } else { 'non' }), `
+    $(if ($Qwen35Agent9B) { 'oui' } else { 'non' }), `
     $(if ($DevstralAgent24B) { 'oui' } else { 'non' }))
 
 $ollamaPath = Get-OllamaExecutable
@@ -184,7 +221,8 @@ else {
     Write-Host "Ollama deja installe : $ollamaPath" -ForegroundColor Green
 }
 
-if (-not $GptOss20B -and -not $QwenCoder14B -and -not $DevstralAgent24B) {
+if (-not $GptOss20B -and -not $QwenCoder14B -and -not $Qwen35Agent9B -and
+    -not $DevstralAgent24B) {
     Write-Host 'Aucun modele selectionne. Installation de Ollama terminee.' -ForegroundColor Green
     return
 }
@@ -214,6 +252,18 @@ if ($QwenCoder14B) {
         -OllamaPath $ollamaPath `
         -Model 'qwen2.5-coder:14b-instruct-q5_K_M' `
         -ApproximateSize '11 Go' `
+        -InstalledModels $installedModels
+}
+if ($Qwen35Agent9B) {
+    Install-OllamaModelIfMissing `
+        -OllamaPath $ollamaPath `
+        -Model $qwen35BaseModel `
+        -ApproximateSize '6,6 Go' `
+        -InstalledModels $installedModels
+    Install-OllamaProfileIfMissing `
+        -OllamaPath $ollamaPath `
+        -Profile $qwen35AgentProfile `
+        -ModelfilePath $qwen35ModelfilePath `
         -InstalledModels $installedModels
 }
 if ($DevstralAgent24B) {

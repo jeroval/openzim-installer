@@ -22,16 +22,27 @@ Describe 'Scripts PowerShell' {
         }
     }
 
-    It 'integre Devstral Small 2 comme modele de code agentique optionnel' {
+    It 'integre Qwen 3.5 9B 32K comme profil agentique recommande' {
         $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
         $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
-        $model = 'devstral-small-2:24b-instruct-2512-q4_K_M'
+        $modelfile = [IO.File]::ReadAllText((Join-Path $projectRoot 'config\Modelfile.Qwen35CodeAgent'))
 
-        if (-not $assistant.Contains('InstallDevstralAgent') -or
-            -not $assistant.Contains('recommande pour le code agentique') -or
+        if (-not $assistant.Contains('InstallQwen35Agent') -or
+            -not $assistant.Contains('Qwen 3.5 9B 32K - recommande pour le code agentique') -or
             -not $assistant.Contains("-Default '3'") -or
-            -not $installer.Contains($model)) {
-            throw 'Le selecteur Devstral agentique est incomplet.'
+            -not $installer.Contains('qwen3.5-code-agent:9b-32k') -or
+            -not $modelfile.Contains('FROM qwen3.5:9b-q4_K_M') -or
+            -not $modelfile.Contains('PARAMETER num_ctx 32768')) {
+            throw 'Le profil Qwen 3.5 agentique 32K est incomplet.'
+        }
+    }
+
+    It 'conserve Devstral Small 2 comme modele agentique optionnel exigeant' {
+        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
+        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
+        if (-not $assistant.Contains('InstallDevstralAgent') -or
+            -not $installer.Contains('devstral-small-2:24b-instruct-2512-q4_K_M')) {
+            throw 'Le choix Devstral optionnel a disparu du selecteur.'
         }
     }
 }

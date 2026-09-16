@@ -29,11 +29,10 @@ de chat de VS Code doit prendre en charge MCP et autoriser les appels d'outils.
 - PowerShell 5.1 ou version ultérieure ;
 - une connexion Internet pour l'installation et les téléchargements initiaux ;
 - suffisamment d'espace disque : budget ZIM choisi, plus environ 14 Go pour
-  GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B et 15 Go pour Devstral Small 2
-  24B si les trois sont installés ;
-- idéalement 16 Go de mémoire vive ou plus pour GPT-OSS 20B, et 32 Go pour
-  Devstral Small 2 avec déchargement CPU. Les performances réelles dépendent
-  fortement du processeur, de la mémoire, du GPU et de la taille de contexte.
+  GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B, 6,6 Go pour Qwen 3.5 Agent 9B
+  et 15 Go pour Devstral Small 2 24B si tous sont installés ;
+- idéalement 16 Go de mémoire vive ou plus. Le profil Qwen 3.5 Agent limite
+  automatiquement le contexte à 32K pour les GPU grand public.
 
 Les droits administrateur ne sont normalement pas nécessaires lorsque les
 dossiers proposés par défaut sont conservés.
@@ -46,8 +45,8 @@ serveur OpenZIM MCP, les téléchargements et VS Code. Les valeurs sont
 enregistrées automatiquement.
 
 L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B,
-Qwen2.5-Coder 14B et Devstral Agent 24B sans démarrer de service ni télécharger
-de modèle. Il affiche
+Qwen2.5-Coder 14B, Qwen 3.5 Agent 9B 32K et Devstral Agent 24B sans démarrer de
+service ni télécharger de modèle. Il affiche
 un parcours en quatre étapes pour montrer ce qui est prêt et ce qui reste à faire.
 
 Consultez [le guide débutant](docs/Guide-Debutant.md) pour le parcours pas à pas.
@@ -138,8 +137,8 @@ meme source sont mutuellement exclusives.
 # 2. Installer uv et OpenZIM MCP
 .\Start-OpenZimAssistant.ps1 -Action Install
 
-# Installer Ollama et Devstral pour le code agentique (environ 15 Go)
-.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallDevstralAgent
+# Installer le profil Qwen 3.5 recommande pour le code agentique (environ 6,6 Go)
+.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallQwen35Agent
 
 # 3. Telecharger les sources principales avec reprise et controle SHA-256
 .\Start-OpenZimAssistant.ps1 -Action Download
@@ -150,6 +149,11 @@ meme source sont mutuellement exclusives.
 # 5. Controler l'environnement local
 .\Start-OpenZimAssistant.ps1 -Action Test
 ```
+
+Le modèle téléchargé est
+[`qwen3.5:9b-q4_K_M`](https://ollama.com/library/qwen3.5:9b-q4_K_M).
+L'assistant crée ensuite le profil local `qwen3.5-code-agent:9b-32k`, qui
+conserve les mêmes poids mais fixe `num_ctx` à 32768 et la température à 0,2.
 
 `-Action All` enchaine ces operations. Il peut telecharger un volume tres
 important ; toujours executer `Plan` auparavant.

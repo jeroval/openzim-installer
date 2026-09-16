@@ -75,6 +75,9 @@ param(
     [switch] $InstallQwenCoder,
 
     [Parameter()]
+    [switch] $InstallQwen35Agent,
+
+    [Parameter()]
     [switch] $InstallDevstralAgent,
 
     [Parameter()]
@@ -302,6 +305,7 @@ function Invoke-OpenZimAction {
             Invoke-LocalScript -Path $localAiInstaller -Arguments @{
                 GptOss20B        = $InstallGptOss
                 QwenCoder14B     = $InstallQwenCoder
+                Qwen35Agent9B    = $InstallQwen35Agent
                 DevstralAgent24B = $InstallDevstralAgent
                 Confirm          = $false
             }
@@ -490,6 +494,23 @@ function Show-EnvironmentSummary {
         'non installe'
     }
 
+    $qwen35AgentModel = 'qwen3.5-code-agent:9b-32k'
+    $qwen35AgentStatus = if (-not $ollamaInstalled) {
+        'non verifiable (Ollama absent)'
+    }
+    elseif (-not $ollamaApiAvailable) {
+        'non verifiable (service Ollama arrete)'
+    }
+    elseif ($qwen35AgentModel -in $ollamaModels) {
+        'installe (contexte 32K)'
+    }
+    elseif (@($ollamaModels -match '^qwen3\.5:9b').Count -gt 0) {
+        'base presente, profil 32K absent'
+    }
+    else {
+        'non installe'
+    }
+
     # La lecture porte uniquement sur les metadonnees des fichiers. Aucun ZIM
     # n'est ouvert ni indexe pour construire cet apercu.
     $zimFiles = @(if (Test-Path -LiteralPath $LibraryRoot -PathType Container) {
@@ -531,6 +552,7 @@ function Show-EnvironmentSummary {
         @{ Name = 'Ollama'; Present = if ($ollamaInstalled) { 'installe' } else { 'non detecte' } }
         @{ Name = 'GPT-OSS 20B'; Present = $gptOssStatus }
         @{ Name = 'Qwen2.5-Coder 14B'; Present = $qwenStatus }
+        @{ Name = 'Qwen 3.5 Agent 9B'; Present = $qwen35AgentStatus }
         @{ Name = 'Devstral Agent 24B'; Present = $devstralStatus }
         @{ Name = 'Archives ZIM'; Present = $zimStatus }
         @{ Name = 'Projet VS Code'; Present = if ($projectConfigured) { 'configure pour OpenZIM' } else { 'a configurer (option 5)' } }
@@ -544,6 +566,7 @@ function Show-EnvironmentSummary {
     $hasModel =
         $gptOssStatus -eq 'installe' -or
         $qwenStatus -eq 'installe' -or
+        $qwen35AgentStatus -eq 'installe (contexte 32K)' -or
         $devstralStatus -eq 'installe'
     $journey = @(
         @{ Label = 'Moteur IA local'; Done = $ollamaInstalled -and $hasModel }
@@ -589,7 +612,7 @@ COMMENT LES COMPOSANTS TRAVAILLENT ENSEMBLE
   VS Code et son extension de chat
        | envoie votre question au modele et autorise les outils MCP
        v
-  Ollama -> GPT-OSS 20B, Qwen2.5-Coder ou Devstral Agent
+  Ollama -> GPT-OSS, Qwen Coder ou un profil agentique optimise
        | demande une recherche documentaire quand elle est utile
        v
   OpenZIM MCP -> archives .zim Kiwix stockees sur votre disque
@@ -621,8 +644,8 @@ Le profil d usage modifie l ordre de priorite des sources lorsqu elles ne
 tiennent pas toutes dans le budget. Le plan reste visible avant telechargement.
 
 Le budget ZIM ne comprend pas les modeles Ollama. Comptez environ 14 Go pour
-GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B Q5_K_M et 15 Go pour Devstral
-Small 2 24B Q4_K_M, en plus des archives.
+GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B Q5_K_M, 6,6 Go pour Qwen 3.5
+Agent 9B 32K et 15 Go pour Devstral Small 2 24B Q4_K_M.
 
 Aucune option de planification ou de statut ne telecharge de gros fichier.
 Les options 4, 8, 11 et 12 annoncent ou demandent confirmation avant les
@@ -694,26 +717,28 @@ function Start-LocalAiWizard {
     Write-Host "`nChoisissez un ou plusieurs modeles (exemple : 1,3)." -ForegroundColor DarkCyan
     Write-Host '  1. GPT-OSS 20B - polyvalent et raisonnement (environ 14 Go)'
     Write-Host '  2. Qwen2.5-Coder 14B - generation de code plus legere (environ 11 Go)'
-    Write-Host '  3. Devstral Small 2 24B - recommande pour le code agentique (environ 15 Go)'
-    Write-Host '     Exploration de depot, outils MCP et modifications multi-fichiers.'
+    Write-Host '  3. Qwen 3.5 9B 32K - recommande pour le code agentique (environ 6,6 Go)'
+    Write-Host '     Profil optimise automatiquement pour les outils MCP et 12 Go de VRAM.'
+    Write-Host '  4. Devstral Small 2 24B - agentique mais exigeant (environ 15 Go)'
     Write-Host '  0. Installer uniquement Ollama'
 
     while ($true) {
-        # Devstral est la valeur par defaut car cet assistant cible avant tout
-        # les agents capables d'explorer un depot et d'appeler des outils MCP.
+        # Qwen 3.5 9B 32K est le meilleur compromis par defaut pour un agent
+        # capable d'explorer un depot et d'appeler des outils MCP localement.
         $selectionText = Read-ValueWithDefault -Prompt 'Votre selection' -Default '3'
         $selectedModels = @($selectionText -split '[,; ]+' | Where-Object { $_ })
-        $invalidSelections = @($selectedModels | Where-Object { $_ -notin @('0', '1', '2', '3') })
+        $invalidSelections = @($selectedModels | Where-Object { $_ -notin @('0', '1', '2', '3', '4') })
         if ($invalidSelections.Count -eq 0 -and $selectedModels.Count -gt 0 -and
             -not ('0' -in $selectedModels -and $selectedModels.Count -gt 1)) {
             break
         }
-        Write-Host 'Choisissez 1, 2 ou 3, combinez-les avec des virgules, ou saisissez 0.' -ForegroundColor Yellow
+        Write-Host 'Choisissez 1, 2, 3 ou 4, combinez-les avec des virgules, ou saisissez 0.' -ForegroundColor Yellow
     }
 
     $script:InstallGptOss = '1' -in $selectedModels
     $script:InstallQwenCoder = '2' -in $selectedModels
-    $script:InstallDevstralAgent = '3' -in $selectedModels
+    $script:InstallQwen35Agent = '3' -in $selectedModels
+    $script:InstallDevstralAgent = '4' -in $selectedModels
     Invoke-OpenZimAction -RequestedAction 'InstallAI'
 }
 

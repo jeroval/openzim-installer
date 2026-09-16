@@ -60,7 +60,18 @@ Selectionner une variante locale de `qwen2.5-coder`, puis demander :
 La reponse est valide si OpenZIM est appele, si MDN est cite et si l'exemple
 correspond au passage recupere.
 
-## 5. Scenario Devstral Agent 24B
+## 5. Scenario Qwen 3.5 Agent 9B 32K
+
+Selectionner `qwen3.5-code-agent:9b-32k`, puis demander :
+
+> Agis comme un agent de developpement. Verifie OpenZIM, recherche la
+> documentation de `pathlib.Path`, cite l'archive utilisee et propose une
+> modification courte limitee a un fichier.
+
+La reponse est valide si Qwen appelle reellement OpenZIM, cite la source locale
+et conserve assez de contexte pour terminer sans coupure de la connexion.
+
+## 6. Scenario Devstral Agent 24B
 
 Selectionner `devstral-small-2:24b-instruct-2512-q4_K_M`, puis demander :
 
@@ -81,14 +92,14 @@ pas une erreur OpenZIM et le fichier demandé n'a normalement pas été modifié
 1. Démarrez une nouvelle conversation pour ne pas conserver l'appel invalide.
 2. Demandez une modification courte, limitée à un fichier et à une seule méthode.
 3. Exigez des chemins relatifs au projet dans les patchs.
-4. Si GPT-OSS échoue encore, essayez Devstral Small 2, proposé dans le sélecteur
-   précisément pour le code agentique et les appels d'outils. Qwen2.5-Coder peut
-   produire l'appel sous forme de texte selon son template ; vérifiez donc qu'un
-   véritable appel apparaît dans l'historique.
+4. Si GPT-OSS échoue encore, essayez `qwen3.5-code-agent:9b-32k`, profil
+   recommandé dans le sélecteur pour le code agentique et les appels d'outils.
+   Qwen2.5-Coder peut produire l'appel sous forme de texte selon son template ;
+   vérifiez donc qu'un véritable appel apparaît dans l'historique.
 5. Une mise à jour d'Ollama ou du modèle peut modifier ce comportement : relancez
    l'option 6 après chaque mise à jour importante.
 
-## 6. Validation hors ligne
+## 7. Validation hors ligne
 
 1. Terminer tous les telechargements avant ce test.
 2. Desactiver temporairement Wi-Fi/Ethernet depuis Windows.
@@ -101,7 +112,7 @@ pas une erreur OpenZIM et le fichier demandé n'a normalement pas été modifié
 La coupure reseau doit etre effectuee manuellement : un script ne doit pas
 desactiver vos interfaces reseau sans confirmation explicite.
 
-## 7. Mise a jour periodique
+## 8. Mise a jour periodique
 
 Afficher d'abord le plan :
 
