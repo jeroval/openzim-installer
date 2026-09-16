@@ -5,6 +5,7 @@ agent: 'agent'
 tools: ['openzim/*']
 ---
 
+<!-- openzim-startup-check:begin -->
 # Diagnostic de démarrage OpenZIM
 
 Effectue uniquement un diagnostic en lecture seule. Ne crée, ne modifie et ne
@@ -49,3 +50,4 @@ Une phrase indiquant si la chaîne est prête et, sinon, l’erreur exacte.
 Ne confonds jamais la présence de `.vscode/mcp.json` avec une connexion réussie.
 Ne prétends jamais avoir consulté une archive si aucun appel d’outil n’a retourné
 son contenu.
+<!-- openzim-startup-check:end -->

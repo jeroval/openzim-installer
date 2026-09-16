@@ -20,7 +20,9 @@ dans le catalogue Kiwix :
 
 1. Ouvrir la palette de commandes.
 2. Executer `MCP: List Servers`.
-3. Verifier que `openzim` est demarre et que son outil `zim_query` est visible.
+3. En mode simple, verifier que `openzim` est demarre et que les outils
+   `openzim_list_archives`, `openzim_search` et `openzim_search_archive` sont visibles.
+   En mode avance, les outils OpenZIM complets restent affiches.
 4. En cas d'erreur, ouvrir `Show Output` pour voir les journaux du serveur.
 
 ## 2 bis. Diagnostic du premier chat
@@ -30,6 +32,10 @@ résultat doit confirmer séparément le serveur MCP, l'inventaire des archives 
 la lecture effective d'un document. Une simple présence de `mcp.json` ne suffit
 pas. Si la commande n'est pas proposée, exécutez `Chat: Run Prompt` depuis la
 palette de commandes et sélectionnez `verifier-openzim`.
+
+Si une ancienne configuration affiche seulement `zim_query` en mode simple,
+relancez l'option 5 de l'assistant. Elle remplacera cette configuration par la
+passerelle compatible GPT-OSS après un auto-test local des archives.
 
 ## 3. Scenario GPT-OSS 20B
 

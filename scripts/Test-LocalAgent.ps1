@@ -58,6 +58,41 @@ if (Test-Path -LiteralPath $mcpPath) {
         $mcp = Get-Content -LiteralPath $mcpPath -Raw -Encoding UTF8 | ConvertFrom-Json
         $hasOpenZim = $null -ne $mcp.servers.PSObject.Properties['openzim']
         Add-TestResult -Test 'Configuration MCP' -Success $hasOpenZim -Detail $mcpPath
+        if ($hasOpenZim) {
+            $openZimServer = $mcp.servers.openzim
+            $serverArguments = @($openZimServer.args)
+            $usesCompatibilityBridge =
+                $serverArguments.Count -gt 0 -and
+                [IO.Path]::GetFileName($serverArguments[0]) -eq 'OpenZimCompatServer.py'
+            $usesAdvancedMode =
+                $serverArguments -contains '--mode' -and
+                $serverArguments -contains 'advanced'
+
+            if ($usesCompatibilityBridge) {
+                $bridgePath = [string] $serverArguments[0]
+                $bridgeReady = Test-Path -LiteralPath $bridgePath -PathType Leaf
+                Add-TestResult `
+                    -Test 'Compatibilite GPT-OSS' `
+                    -Success $bridgeReady `
+                    -Detail $(if ($bridgeReady) {
+                        "Passerelle MCP simplifiee : $bridgePath"
+                    } else {
+                        "Passerelle introuvable : $bridgePath (relancez l option 5)"
+                    })
+            }
+            elseif ($usesAdvancedMode) {
+                Add-TestResult `
+                    -Test 'Compatibilite GPT-OSS' `
+                    -Success $true `
+                    -Detail 'Mode avance choisi : schemas complets reserves aux modeles compatibles'
+            }
+            else {
+                Add-TestResult `
+                    -Test 'Compatibilite GPT-OSS' `
+                    -Success $false `
+                    -Detail 'Ancienne configuration simple detectee : relancez l option 5'
+            }
+        }
     }
     catch {
         Add-TestResult -Test 'Configuration MCP' -Success $false -Detail "JSON invalide : $mcpPath"
@@ -73,7 +108,7 @@ if (Test-Path -LiteralPath $instructionsPath) {
     $hasManagedInstructions =
         $instructions.Contains('<!-- openzim-mcp:begin -->') -and
         $instructions.Contains('<!-- openzim-mcp:end -->') -and
-        $instructions.Contains('zim_query')
+        $instructions.Contains('openzim_list_archives')
     Add-TestResult -Test 'Instructions IA OpenZIM' -Success $hasManagedInstructions -Detail $instructionsPath
 }
 else {

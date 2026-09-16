@@ -91,10 +91,18 @@ artefacts volumineux de la bibliothèque ZIM. Les
 standards, `AGENTS.md` et le guide restent partageables par Git.
 
 Au début d'une nouvelle conversation, saisissez `/verifier-openzim` dans le
-chat. Ce prompt contrôle la disponibilité de `zim_query`, inventorie les ZIM,
+chat. Ce prompt contrôle les outils simplifiés OpenZIM, inventorie les ZIM,
 lit réellement une documentation et produit un compte rendu en français. Si la
 commande n'apparaît pas, utilisez `Chat: Run Prompt` dans la palette de commandes
 et sélectionnez `verifier-openzim`.
+
+En mode `simple`, l'option 5 configure automatiquement une passerelle de
+compatibilité pour les modèles locaux. Elle expose seulement trois outils aux
+schémas courts : `openzim_list_archives`, `openzim_search` et
+`openzim_search_archive`. Cette couche évite que GPT-OSS remplisse les nombreux
+paramètres facultatifs de `zim_query` avec des valeurs invalides. Le paquet
+OpenZIM MCP officiel reste responsable de toutes les recherches. Le mode
+`advanced` conserve volontairement l'accès direct aux outils complets.
 
 Le dossier proposé par défaut est
 `%USERPROFILE%\OpenZIM\Knowledge\ZIM`, accessible sans droits administrateur.
@@ -254,7 +262,7 @@ compatibilité ; aucun nouveau code ne doit y être ajouté.
 ## Limites de validation
 
 Le script peut verifier Ollama, les modeles, les fichiers ZIM et la
-configuration MCP. La preuve qu'un modele choisit effectivement `zim_query`
+configuration MCP. La preuve qu'un modele choisit effectivement un outil OpenZIM
 doit etre faite dans le chat VS Code : suivez les scenarios de
 `docs/Validation-Agent-Local.md`.
 

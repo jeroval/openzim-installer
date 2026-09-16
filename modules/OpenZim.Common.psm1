@@ -211,7 +211,8 @@ Applique les standards obligatoires de
 `.github/instructions/openzim-development-standards.instructions.md` à toute
 création, modification, correction ou revue de code.
 
-1. Consulte d'abord le serveur MCP `openzim` avec l'outil `zim_query`.
+1. Consulte d'abord le serveur MCP `openzim` avec les outils simplifies
+   `openzim_list_archives`, `openzim_search` et `openzim_search_archive`.
 2. Formule une recherche precise avec les mots de l'erreur et le contexte technique.
 3. Appuie la reponse sur les resultats locaux pertinents et indique l'archive ou
    l'article utilise lorsqu'il est disponible.
@@ -227,9 +228,8 @@ création, modification, correction ou revue de code.
   en anglais. Conserve tels quels le code, les commandes, les API et les noms
   techniques qui ne doivent pas être traduits.
 - Au premier échange d’une nouvelle conversation, vérifie une seule fois l’accès
-  à OpenZIM avant toute tâche technique. Utilise directement `zim_query` avec
-  `{"query":"list available ZIM files"}` et n’annonce jamais un succès sans
-  résultat réel de l’outil.
+  à OpenZIM avant toute tâche technique. Appelle `openzim_list_archives` sans
+  argument et n’annonce jamais un succès sans résultat réel de l’outil.
 - Après utilisation d’OpenZIM, termine par `Sources locales consultées` et indique
   pour chaque source l’archive, le document et l’information apportée.
 - Si l’outil ou le document est indisponible, indique `OpenZIM non vérifié` ou

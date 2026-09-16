@@ -22,8 +22,9 @@ sous-dossiers.
 Configure automatiquement le projet indique par `ProjectDirectory`.
 
 .PARAMETER Mode
-Le mode `simple` expose surtout `zim_query` et convient mieux aux modeles
-locaux. Le mode `advanced` expose davantage d'outils MCP.
+Le mode `simple` expose trois outils courts via une passerelle compatible avec
+GPT-OSS et les petits modeles locaux. Le mode `advanced` expose directement les
+outils complets d'OpenZIM MCP.
 
 .EXAMPLE
 .\scripts\Install-OpenZimMcp.ps1
@@ -132,6 +133,8 @@ function Set-VSCodeMcpConfiguration {
         [Parameter(Mandatory)] [string] $WorkspacePath,
         [Parameter(Mandatory)] [string[]] $ArchivePaths,
         [Parameter(Mandatory)] [string] $UvxPath,
+        [Parameter(Mandatory)] [string] $OpenZimPythonPath,
+        [Parameter(Mandatory)] [string] $CompatibilityServerPath,
         [Parameter(Mandatory)] [ValidateSet('simple', 'advanced')] [string] $ToolMode,
         [Parameter(Mandatory)] [bool] $Overwrite
     )
@@ -159,16 +162,22 @@ function Set-VSCodeMcpConfiguration {
         $configuration | Add-Member -MemberType NoteProperty -Name servers -Value ([pscustomobject]@{})
     }
 
-    $arguments = @('openzim-mcp')
-    if ($ToolMode -eq 'advanced') {
-        $arguments += @('--mode', 'advanced')
+    if ($ToolMode -eq 'simple') {
+        # GPT-OSS rend parfois les champs facultatifs de zim_query comme
+        # obligatoires, puis genere des valeurs invalides. La passerelle
+        # expose des schemas courts et delegue au paquet OpenZIM officiel.
+        $server = [pscustomobject]@{
+            type    = 'stdio'
+            command = $OpenZimPythonPath
+            args    = @($CompatibilityServerPath) + $ArchivePaths
+        }
     }
-    $arguments += $ArchivePaths
-
-    $server = [pscustomobject]@{
-        type    = 'stdio'
-        command = $UvxPath
-        args    = $arguments
+    else {
+        $server = [pscustomobject]@{
+            type    = 'stdio'
+            command = $UvxPath
+            args    = @('openzim-mcp', '--mode', 'advanced') + $ArchivePaths
+        }
     }
 
     $existingServer = $configuration.servers.PSObject.Properties['openzim']
@@ -321,10 +330,22 @@ $uvxPath = Get-ExecutablePath -Name 'uvx.exe'
 if ($null -eq $uvxPath) {
     $uvxPath = Join-Path (Split-Path -Parent $uvPath) 'uvx.exe'
 }
+$toolDirectory = (& $uvPath tool dir 2>&1 | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($toolDirectory)) {
+    throw 'Impossible de determiner le dossier des environnements uv.'
+}
+$openZimPythonPath = Join-Path $toolDirectory 'openzim-mcp\Scripts\python.exe'
+$compatibilityServerPath = Join-Path $repositoryRoot 'scripts\OpenZimCompatServer.py'
 
 if (-not $WhatIfPreference) {
     if ($null -eq $openZimPath) {
         throw "OpenZIM MCP a ete installe, mais 'openzim-mcp.exe' reste introuvable dans '$toolBin'."
+    }
+    if (-not (Test-Path -LiteralPath $openZimPythonPath -PathType Leaf)) {
+        throw "Interpreteur Python OpenZIM introuvable : $openZimPythonPath"
+    }
+    if (-not (Test-Path -LiteralPath $compatibilityServerPath -PathType Leaf)) {
+        throw "Passerelle de compatibilite introuvable : $compatibilityServerPath"
     }
 
     Write-Step 'Verification de OpenZIM MCP'
@@ -361,10 +382,18 @@ if ($ConfigureVSCode) {
     }
 
     Write-Step 'Configuration de VS Code'
+    if ($Mode -eq 'simple' -and -not $WhatIfPreference) {
+        Write-Host 'Verification de la passerelle simplifiee pour GPT-OSS...' -ForegroundColor DarkCyan
+        Invoke-NativeCommand `
+            -FilePath $openZimPythonPath `
+            -ArgumentList (@($compatibilityServerPath, '--self-test') + $archiveDirectories)
+    }
     Set-VSCodeMcpConfiguration `
         -WorkspacePath $ProjectDirectory `
         -ArchivePaths $archiveDirectories `
         -UvxPath $uvxPath `
+        -OpenZimPythonPath $openZimPythonPath `
+        -CompatibilityServerPath $compatibilityServerPath `
         -ToolMode $Mode `
         -Overwrite $ForceMcpConfig.IsPresent
 

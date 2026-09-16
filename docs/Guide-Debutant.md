@@ -184,7 +184,8 @@ Après l'option 6, rechargez VS Code puis demandez par exemple :
 > Recherche d'abord dans OpenZIM une explication de cette erreur Python et
 > indique l'archive ou l'article utilisé.
 
-Vérifiez dans le chat qu'un appel à `zim_query` est proposé ou exécuté. Une
+Vérifiez dans le chat qu'un appel à `openzim_search` ou
+`openzim_search_archive` est proposé ou exécuté. Une
 réponse correcte du modèle sans appel d'outil ne prouve pas que la base ZIM a
 été consultée.
 

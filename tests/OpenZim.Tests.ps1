@@ -1,6 +1,7 @@
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $managerPath = Join-Path $projectRoot 'scripts\Invoke-ZimLibrary.ps1'
 $modulePath = Join-Path $projectRoot 'modules\OpenZim.Common.psm1'
+$compatibilityServerPath = Join-Path $projectRoot 'scripts\OpenZimCompatServer.py'
 $catalogFixture = Join-Path $PSScriptRoot 'fixtures\catalog.xml'
 $sourcesFixture = Join-Path $PSScriptRoot 'fixtures\sources.json'
 
@@ -18,6 +19,24 @@ Describe 'Scripts PowerShell' {
             if ($errors.Count -gt 0) {
                 throw "Erreur de syntaxe dans $($script.Name) : $($errors.Message -join '; ')"
             }
+        }
+    }
+}
+
+Describe 'Passerelle MCP pour modeles locaux' {
+    It 'expose uniquement des schemas simples a GPT-OSS' {
+        $bridge = [IO.File]::ReadAllText($compatibilityServerPath)
+        foreach ($toolName in @(
+            'openzim_list_archives',
+            'openzim_search',
+            'openzim_search_archive'
+        )) {
+            if (-not $bridge.Contains("def $toolName(")) {
+                throw "Outil simplifie absent de la passerelle : $toolName"
+            }
+        }
+        if (-not $bridge.Contains('self.backend.mcp.call_tool("zim_query", arguments)')) {
+            throw 'La passerelle ne delegue plus au serveur OpenZIM officiel.'
         }
     }
 }
@@ -236,8 +255,8 @@ Describe 'Instructions IA du projet' {
         if ([regex]::Matches($content, '<!-- openzim-mcp:begin -->').Count -ne 1) {
             throw 'Le bloc OpenZIM a ete duplique.'
         }
-        if (-not $content.Contains('zim_query')) {
-            throw "L'instruction d'utiliser zim_query est absente."
+        if (-not $content.Contains('openzim_list_archives')) {
+            throw "L'instruction d'utiliser la passerelle OpenZIM est absente."
         }
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
@@ -259,7 +278,8 @@ Describe 'Instructions IA du projet' {
         }
         $startupPrompt = [IO.File]::ReadAllText($startupPromptPath)
         if ($startupPrompt -notmatch 'name:\s*[''"]verifier-openzim[''"]' -or
-            -not $startupPrompt.Contains('list available ZIM files') -or
+            -not $startupPrompt.Contains('openzim_list_archives') -or
+            -not $startupPrompt.Contains('openzim_search_archive') -or
             -not $startupPrompt.Contains('exclusivement en fran')) {
             throw 'Le prompt de verification OpenZIM est incomplet.'
         }

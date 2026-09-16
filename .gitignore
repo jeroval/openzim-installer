@@ -4,6 +4,8 @@ debug.log
 *.zim
 *.zim.part
 *.tmp
+__pycache__/
+*.py[cod]
 download-plan.json
 zim-inventory.json
 catalog-development-candidates.json
@@ -12,4 +14,12 @@ catalog-development-candidates.json
 # Configuration OpenZIM propre a cette machine
 .vscode/mcp.json
 .github/copilot-instructions.md
+
+# Bibliotheque et etat d execution locaux
+debug.log
+*.zim
+*.zim.part
+download-plan.json
+zim-inventory.json
+catalog-development-candidates.json
 # openzim-local:end

@@ -16,7 +16,8 @@ applyTo: '**'
 - Reformule l'objectif et identifie les critères d'acceptation.
 - Inspecte les fichiers concernés, l'architecture, les tests et les conventions existantes.
 - Distingue les faits, les hypothèses et les inconnues.
-- Consulte OpenZIM avec `zim_query` pour toute API, syntaxe ou technologie incertaine.
+- Consulte OpenZIM avec `openzim_search` ou `openzim_search_archive` pour toute
+  API, syntaxe ou technologie incertaine.
 - Choisis le plus petit changement cohérent, réversible et vérifiable.
 
 ## Code et architecture
