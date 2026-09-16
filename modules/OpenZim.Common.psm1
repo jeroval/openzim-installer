@@ -173,8 +173,9 @@ function Set-OpenZimProjectInstructions {
 
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     $standardsTemplatePath = Join-Path $repositoryRoot 'templates\Development-Standards.instructions.md'
+    $startupPromptTemplatePath = Join-Path $repositoryRoot 'templates\Verify-OpenZim.prompt.md'
     $guideSourcePath = Join-Path $repositoryRoot 'docs\Guide-Bonnes-Pratiques-Code.md'
-    foreach ($requiredFile in @($standardsTemplatePath, $guideSourcePath)) {
+    foreach ($requiredFile in @($standardsTemplatePath, $startupPromptTemplatePath, $guideSourcePath)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             throw "Modele d instructions introuvable : $requiredFile"
         }
@@ -191,6 +192,16 @@ function Set-OpenZimProjectInstructions {
 
     $standardsFrontMatter = $templateMatch.Groups[1].Value
     $standardsBody = $templateMatch.Groups[2].Value
+    $startupPromptTemplate = [IO.File]::ReadAllText($startupPromptTemplatePath)
+    $startupPromptMatch = [regex]::Match(
+        $startupPromptTemplate,
+        '(?s)\A(---\r?\n.*?\r?\n---)\s*(.*)\z'
+    )
+    if (-not $startupPromptMatch.Success) {
+        throw "Le modele '$startupPromptTemplatePath' doit contenir un en-tete YAML suivi du prompt."
+    }
+    $startupPromptFrontMatter = $startupPromptMatch.Groups[1].Value
+    $startupPromptBody = $startupPromptMatch.Groups[2].Value
     $guideBody = [IO.File]::ReadAllText($guideSourcePath)
 
     $copilotBody = @'
@@ -209,6 +220,21 @@ création, modification, correction ou revue de code.
 5. Ne presente pas comme certaine une commande ou une API que tu n'as pas pu
    verifier. Pour les informations propres au projet, les fichiers du projet
    restent prioritaires.
+
+## Langue et traçabilité
+
+- Réponds en français par défaut, y compris lorsque la documentation trouvée est
+  en anglais. Conserve tels quels le code, les commandes, les API et les noms
+  techniques qui ne doivent pas être traduits.
+- Au premier échange d’une nouvelle conversation, vérifie une seule fois l’accès
+  à OpenZIM avant toute tâche technique. Utilise directement `zim_query` avec
+  `{"query":"list available ZIM files"}` et n’annonce jamais un succès sans
+  résultat réel de l’outil.
+- Après utilisation d’OpenZIM, termine par `Sources locales consultées` et indique
+  pour chaque source l’archive, le document et l’information apportée.
+- Si l’outil ou le document est indisponible, indique `OpenZIM non vérifié` ou
+  `Aucun document local pertinent trouvé` au lieu d’inventer une consultation.
+- Pour un contrôle complet à la demande, exécute le prompt `/verifier-openzim`.
 '@.Trim()
 
     $agentPolicyBody = @'
@@ -217,6 +243,11 @@ création, modification, correction ou revue de code.
 - Applique `.github/instructions/openzim-development-standards.instructions.md`.
 - Inspecte les conventions et les fichiers concernés avant toute modification.
 - Consulte OpenZIM lorsqu'une API, une syntaxe ou une technologie est incertaine.
+- Réponds en français par défaut et traduis en français les explications issues
+  de documents anglais, sans traduire le code ni les identifiants techniques.
+- Cite l’archive, le document et l’apport de toute source OpenZIM effectivement consultée.
+- Au premier échange technique d’une nouvelle conversation, vérifie une fois
+  l’accès réel à OpenZIM avant d’affirmer que la base est disponible.
 - Préserve les changements existants et demande confirmation avant une action irréversible.
 - Exécute les validations disponibles et ne prétends jamais avoir exécuté un test non lancé.
 - Explique toute dérogation aux standards et termine par un résumé des vérifications.
@@ -252,6 +283,14 @@ catalog-development-candidates.json
             Body          = $standardsBody
             InitialPrefix = $standardsFrontMatter
             Label         = 'Standards de developpement IA'
+        }
+        [pscustomobject]@{
+            Path          = Join-Path $workspace.Path '.github\prompts\verifier-openzim.prompt.md'
+            BeginMarker   = '<!-- openzim-startup-check:begin -->'
+            EndMarker     = '<!-- openzim-startup-check:end -->'
+            Body          = $startupPromptBody
+            InitialPrefix = $startupPromptFrontMatter
+            Label         = 'Prompt de verification OpenZIM'
         }
         [pscustomobject]@{
             Path          = Join-Path $workspace.Path 'docs\ai\Guide-Bonnes-Pratiques-Code.md'

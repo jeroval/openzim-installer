@@ -81,15 +81,17 @@ else {
 }
 
 $standardsPath = Join-Path $ProjectDirectory '.github\instructions\openzim-development-standards.instructions.md'
+$startupPromptPath = Join-Path $ProjectDirectory '.github\prompts\verifier-openzim.prompt.md'
 $guidePath = Join-Path $ProjectDirectory 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
 $agentsPath = Join-Path $ProjectDirectory 'AGENTS.md'
 $standardsReady =
     (Test-Path -LiteralPath $standardsPath -PathType Leaf) -and
+    (Test-Path -LiteralPath $startupPromptPath -PathType Leaf) -and
     (Test-Path -LiteralPath $guidePath -PathType Leaf) -and
     (Test-Path -LiteralPath $agentsPath -PathType Leaf)
 Add-TestResult -Test 'Standards de code IA' -Success $standardsReady -Detail $(
     if ($standardsReady) {
-        "Instructions, guide et politique multi-agent installes dans $ProjectDirectory"
+        "Instructions, prompt de demarrage, guide et politique multi-agent installes dans $ProjectDirectory"
     }
     else {
         'Fichiers incomplets : relancez l option 5 pour ce projet'

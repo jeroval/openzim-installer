@@ -241,9 +241,10 @@ Describe 'Instructions IA du projet' {
         }
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
+        $startupPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
         $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
         $agentsPath = Join-Path $workspace 'AGENTS.md'
-        foreach ($generatedPath in @($standardsPath, $guidePath, $agentsPath)) {
+        foreach ($generatedPath in @($standardsPath, $startupPromptPath, $guidePath, $agentsPath)) {
             if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
                 throw "Fichier de standards absent : $generatedPath"
             }
@@ -255,6 +256,12 @@ Describe 'Instructions IA du projet' {
         }
         if (-not ([IO.File]::ReadAllText($agentsPath)).Contains('<!-- openzim-agent-policy:begin -->')) {
             throw 'La politique AGENTS.md geree est absente.'
+        }
+        $startupPrompt = [IO.File]::ReadAllText($startupPromptPath)
+        if ($startupPrompt -notmatch 'name:\s*[''"]verifier-openzim[''"]' -or
+            -not $startupPrompt.Contains('list available ZIM files') -or
+            -not $startupPrompt.Contains('exclusivement en fran')) {
+            throw 'Le prompt de verification OpenZIM est incomplet.'
         }
 
         $gitIgnore = [IO.File]::ReadAllText($gitIgnorePath)

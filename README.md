@@ -78,6 +78,7 @@ L'option 5 installe aussi une charte de développement commune dans le projet :
 ```text
 .github/copilot-instructions.md
 .github/instructions/openzim-development-standards.instructions.md
+.github/prompts/verifier-openzim.prompt.md
 AGENTS.md
 docs/ai/Guide-Bonnes-Pratiques-Code.md
 ```
@@ -88,6 +89,12 @@ Le `.gitignore` du projet est complété par un bloc géré qui exclut uniquemen
 la configuration MCP, les instructions générales choisies comme locales et les
 artefacts volumineux de la bibliothèque ZIM. Les
 standards, `AGENTS.md` et le guide restent partageables par Git.
+
+Au début d'une nouvelle conversation, saisissez `/verifier-openzim` dans le
+chat. Ce prompt contrôle la disponibilité de `zim_query`, inventorie les ZIM,
+lit réellement une documentation et produit un compte rendu en français. Si la
+commande n'apparaît pas, utilisez `Chat: Run Prompt` dans la palette de commandes
+et sélectionnez `verifier-openzim`.
 
 Le dossier proposé par défaut est
 `%USERPROFILE%\OpenZIM\Knowledge\ZIM`, accessible sans droits administrateur.

@@ -23,6 +23,14 @@ dans le catalogue Kiwix :
 3. Verifier que `openzim` est demarre et que son outil `zim_query` est visible.
 4. En cas d'erreur, ouvrir `Show Output` pour voir les journaux du serveur.
 
+## 2 bis. Diagnostic du premier chat
+
+Dans une nouvelle conversation en mode Agent, lancez `/verifier-openzim`. Le
+résultat doit confirmer séparément le serveur MCP, l'inventaire des archives et
+la lecture effective d'un document. Une simple présence de `mcp.json` ne suffit
+pas. Si la commande n'est pas proposée, exécutez `Chat: Run Prompt` depuis la
+palette de commandes et sélectionnez `verifier-openzim`.
+
 ## 3. Scenario GPT-OSS 20B
 
 Selectionner `gpt-oss:20b`, puis demander :

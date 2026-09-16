@@ -65,6 +65,7 @@ Elle crée automatiquement :
 C:\Projets\MonApplication\.vscode\mcp.json
 C:\Projets\MonApplication\.github\copilot-instructions.md
 C:\Projets\MonApplication\.github\instructions\openzim-development-standards.instructions.md
+C:\Projets\MonApplication\.github\prompts\verifier-openzim.prompt.md
 C:\Projets\MonApplication\AGENTS.md
 C:\Projets\MonApplication\docs\ai\Guide-Bonnes-Pratiques-Code.md
 ```
@@ -82,6 +83,20 @@ partiels, plans et inventaires locaux sont également exclus. En revanche,
 `AGENTS.md`, le guide et les
 standards `.github/instructions` restent versionnables : ils constituent les
 règles partagées du projet.
+
+### Premier message de chaque conversation
+
+Dans le chat VS Code, saisissez :
+
+```text
+/verifier-openzim
+```
+
+Le diagnostic vérifie le serveur, demande la liste des archives puis lit un
+document réel. Il répond en français et ne déclare un succès que si les appels
+OpenZIM ont effectivement retourné des données. Vous pouvez également lancer
+`Chat: Run Prompt` depuis la palette de commandes et choisir
+`verifier-openzim`.
 
 Après cette opération, rechargez la fenêtre VS Code. La disponibilité réelle
 d'OpenZIM dépend de l'extension de chat : elle doit prendre en charge Ollama,

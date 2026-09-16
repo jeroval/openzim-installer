@@ -591,6 +591,7 @@ FICHIERS CREES DANS CHAQUE PROJET
   .vscode\mcp.json                  connexion au serveur OpenZIM
   .github\copilot-instructions.md   consigne de consulter la base locale
   .github\instructions\...          standards appliques a tous les fichiers
+  .github\prompts\verifier-openzim.prompt.md  diagnostic du premier chat
   docs\ai\Guide-Bonnes-Pratiques-Code.md  guide complet partage
   AGENTS.md                           politique commune des agents
 
