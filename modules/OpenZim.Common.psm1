@@ -222,6 +222,15 @@ création, modification, correction ou revue de code.
    verifier. Pour les informations propres au projet, les fichiers du projet
    restent prioritaires.
 
+## Fiabilite des modifications avec Ollama
+
+- Utilise uniquement des chemins relatifs au projet dans les patchs.
+- Limite chaque appel de modification a un fichier et un changement logique
+  court ; decoupe une modification volumineuse en plusieurs appels.
+- Si Ollama renvoie `error parsing tool call`, ne repete pas le meme gros patch.
+  Signale l'echec et conseille une nouvelle conversation avec un modele plus
+  fiable pour les appels d'outils de code.
+
 ## Langue et traçabilité
 
 - Réponds en français par défaut, y compris lorsque la documentation trouvée est

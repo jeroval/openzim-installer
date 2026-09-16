@@ -29,9 +29,11 @@ de chat de VS Code doit prendre en charge MCP et autoriser les appels d'outils.
 - PowerShell 5.1 ou version ultérieure ;
 - une connexion Internet pour l'installation et les téléchargements initiaux ;
 - suffisamment d'espace disque : budget ZIM choisi, plus environ 14 Go pour
-  GPT-OSS 20B et 11 Go pour Qwen2.5-Coder 14B si les deux sont installés ;
-- idéalement 16 Go de mémoire vive ou plus pour GPT-OSS 20B. Les performances
-  réelles dépendent fortement du processeur, de la mémoire et du GPU.
+  GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B et 15 Go pour Devstral Small 2
+  24B si les trois sont installés ;
+- idéalement 16 Go de mémoire vive ou plus pour GPT-OSS 20B, et 32 Go pour
+  Devstral Small 2 avec déchargement CPU. Les performances réelles dépendent
+  fortement du processeur, de la mémoire, du GPU et de la taille de contexte.
 
 Les droits administrateur ne sont normalement pas nécessaires lorsque les
 dossiers proposés par défaut sont conservés.
@@ -43,8 +45,9 @@ configurer l'usage principal, le dossier, le budget, les contenus optionnels, l'
 serveur OpenZIM MCP, les téléchargements et VS Code. Les valeurs sont
 enregistrées automatiquement.
 
-L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B et
-Qwen2.5-Coder 14B sans démarrer de service ni télécharger de modèle. Il affiche
+L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B,
+Qwen2.5-Coder 14B et Devstral Agent 24B sans démarrer de service ni télécharger
+de modèle. Il affiche
 un parcours en quatre étapes pour montrer ce qui est prêt et ce qui reste à faire.
 
 Consultez [le guide débutant](docs/Guide-Debutant.md) pour le parcours pas à pas.
@@ -135,8 +138,8 @@ meme source sont mutuellement exclusives.
 # 2. Installer uv et OpenZIM MCP
 .\Start-OpenZimAssistant.ps1 -Action Install
 
-# Installer Ollama et les deux modeles locaux (environ 25 Go)
-.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallGptOss -InstallQwenCoder
+# Installer Ollama et Devstral pour le code agentique (environ 15 Go)
+.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallDevstralAgent
 
 # 3. Telecharger les sources principales avec reprise et controle SHA-256
 .\Start-OpenZimAssistant.ps1 -Action Download
@@ -273,5 +276,9 @@ doit etre faite dans le chat VS Code : suivez les scenarios de
 - Il ne garantit pas qu'un modèle appellera un outil à chaque question ; les
   instructions du projet l'y encouragent et le scénario de validation permet de
   le vérifier.
+- Il ne peut pas réparer le parseur interne d'Ollama. GPT-OSS peut encore
+  produire un appel `apply_patch` invalide lors d'une grosse modification de
+  code. Les instructions générées imposent des chemins relatifs et des patchs
+  courts, et l'option 6 affiche un avertissement lorsqu'elle détecte GPT-OSS.
 - Il ne réduit pas artificiellement les très grandes archives : une source qui
   dépasse le budget est exclue et expliquée dans le plan.

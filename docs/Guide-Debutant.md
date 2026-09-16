@@ -32,9 +32,9 @@ composants réellement détectés, ainsi qu'un parcours en quatre étapes.
 L'assistant vous demande confirmation avant les téléchargements volumineux et
 avant la création d'une tâche planifiée.
 
-La rubrique **État rapide** détecte Visual Studio Code, Ollama, GPT-OSS 20B et
-Qwen2.5-Coder 14B. Si Ollama est arrêté, les modèles sont indiqués comme non
-vérifiables ; l'écran d'accueil ne démarre aucun service.
+La rubrique **État rapide** détecte Visual Studio Code, Ollama, GPT-OSS 20B,
+Qwen2.5-Coder 14B et Devstral Agent 24B. Si Ollama est arrêté, les modèles sont
+indiqués comme non vérifiables ; l'écran d'accueil ne démarre aucun service.
 
 ## Ordre conseillé
 
@@ -51,9 +51,11 @@ Le parcours complet réalise les opérations suivantes :
 ### Avant de télécharger
 
 Le budget indiqué concerne uniquement les archives ZIM. Les modèles Ollama
-occupent de l'espace en supplément : environ 14 Go pour GPT-OSS 20B et 11 Go
-pour Qwen2.5-Coder 14B Q5_K_M. L'option 3 est toujours sans gros téléchargement
-et permet de connaître la taille du panier documentaire à l'avance.
+occupent de l'espace en supplément : environ 14 Go pour GPT-OSS 20B, 11 Go
+pour Qwen2.5-Coder 14B Q5_K_M et 15 Go pour Devstral Small 2 24B Q4_K_M.
+Devstral est le choix recommandé pour le code agentique et l'utilisation
+d'outils. L'option 3 est toujours sans gros téléchargement et permet de
+connaître la taille du panier documentaire à l'avance.
 
 ### Configuration de votre premier projet
 
@@ -157,13 +159,13 @@ Configuration assistée** ; aucun fichier JSON n'est à modifier.
 | 3 | Affiche les archives choisies et leur taille, sans les télécharger |
 | 4 | Télécharge le pack avec reprise et contrôles |
 | 5 | Configure automatiquement MCP et les instructions IA du projet VS Code sélectionné |
-| 6 | Vérifie PowerShell, Ollama, les ZIM et MCP ; les modèles GPT-OSS et Qwen sont seulement informatifs |
+| 6 | Vérifie PowerShell, Ollama, les ZIM et MCP ; les modèles installés sont seulement informatifs |
 | 7 | Affiche les archives déjà présentes |
 | 8 | Recherche et installe les nouvelles versions |
 | 9 | Liste d'autres documentations disponibles chez Kiwix |
 | 10 | Ouvre le gestionnaire de tâche : créer, vérifier, tester ou supprimer |
 | 11 | Lance le parcours guidé avec prévisualisation du panier avant téléchargement |
-| 12 | Installe Ollama s'il manque, puis les modèles IA choisis s'ils sont absents |
+| 12 | Affiche le sélecteur, installe Ollama s'il manque, puis uniquement les modèles IA choisis |
 | 13 | Ferme proprement l'assistant (`0` reste également accepté) |
 | A | Affiche l'aide et le schéma du parcours local |
 

@@ -28,17 +28,17 @@ une technologie ou un comportement dont tu n'es pas certain :
 - En cas d'echec, identifie d'abord l'erreur racine avant les avertissements.
 
 <!-- openzim-agent-policy:begin -->
-## Politique de dÃ©veloppement gÃ©rÃ©e par OpenZIM
+## Politique de développement gérée par OpenZIM
 
 - Applique `.github/instructions/openzim-development-standards.instructions.md`.
-- Inspecte les conventions et les fichiers concernÃ©s avant toute modification.
+- Inspecte les conventions et les fichiers concernés avant toute modification.
 - Consulte OpenZIM lorsqu'une API, une syntaxe ou une technologie est incertaine.
-- RÃ©ponds en franÃ§ais par dÃ©faut et traduis en franÃ§ais les explications issues
+- Réponds en français par défaut et traduis en français les explications issues
   de documents anglais, sans traduire le code ni les identifiants techniques.
-- Cite lâ€™archive, le document et lâ€™apport de toute source OpenZIM effectivement consultÃ©e.
-- Au premier Ã©change technique dâ€™une nouvelle conversation, vÃ©rifie une fois
-  lâ€™accÃ¨s rÃ©el Ã  OpenZIM avant dâ€™affirmer que la base est disponible.
-- PrÃ©serve les changements existants et demande confirmation avant une action irrÃ©versible.
-- ExÃ©cute les validations disponibles et ne prÃ©tends jamais avoir exÃ©cutÃ© un test non lancÃ©.
-- Explique toute dÃ©rogation aux standards et termine par un rÃ©sumÃ© des vÃ©rifications.
+- Cite l’archive, le document et l’apport de toute source OpenZIM effectivement consultée.
+- Au premier échange technique d’une nouvelle conversation, vérifie une fois
+  l’accès réel à OpenZIM avant d’affirmer que la base est disponible.
+- Préserve les changements existants et demande confirmation avant une action irréversible.
+- Exécute les validations disponibles et ne prétends jamais avoir exécuté un test non lancé.
+- Explique toute dérogation aux standards et termine par un résumé des vérifications.
 <!-- openzim-agent-policy:end -->

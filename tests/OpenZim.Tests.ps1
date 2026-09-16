@@ -21,6 +21,19 @@ Describe 'Scripts PowerShell' {
             }
         }
     }
+
+    It 'integre Devstral Small 2 comme modele de code agentique optionnel' {
+        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
+        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
+        $model = 'devstral-small-2:24b-instruct-2512-q4_K_M'
+
+        if (-not $assistant.Contains('InstallDevstralAgent') -or
+            -not $assistant.Contains('recommande pour le code agentique') -or
+            -not $assistant.Contains("-Default '3'") -or
+            -not $installer.Contains($model)) {
+            throw 'Le selecteur Devstral agentique est incomplet.'
+        }
+    }
 }
 
 Describe 'Passerelle MCP pour modeles locaux' {
@@ -305,7 +318,16 @@ Describe 'Instructions IA du projet' {
         $original = '<!-- openzim-mcp:begin -->'
         [IO.File]::WriteAllText($instructionsPath, $original, [Text.UTF8Encoding]::new($false))
 
-        { Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false } | Should Throw
+        $rejected = $false
+        try {
+            Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
+        }
+        catch {
+            $rejected = $true
+        }
+        if (-not $rejected) {
+            throw 'Le generateur aurait du refuser le marqueur incomplet.'
+        }
         if ([IO.File]::ReadAllText($instructionsPath) -ne $original) {
             throw 'Le fichier avec un marqueur incomplet a ete modifie.'
         }

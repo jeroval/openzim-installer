@@ -31,6 +31,17 @@ applyTo: '**'
 - Pour PowerShell, nomme scripts et fonctions avec `Verbe-Nom`.
 - Explique le pourquoi dans les commentaires ; laisse le code et les noms expliquer le quoi.
 
+## Fiabilité des appels d'outils locaux
+
+- Dans un patch, utilise toujours un chemin relatif au projet et jamais un
+  chemin Windows absolu contenant des barres obliques inverses.
+- Limite chaque appel de modification à un fichier et à un changement logique
+  court. Découpe les méthodes volumineuses en plusieurs appels successifs.
+- Après chaque modification, relis la zone touchée avant de poursuivre.
+- Si Ollama renvoie `error parsing tool call`, ne répète pas le même gros patch :
+  signale l'échec, conseille une nouvelle conversation et un modèle plus fiable
+  pour les outils de code.
+
 ## Données, erreurs et sécurité
 
 - Valide toute entrée externe : type, format, taille, plage, autorisation et cohérence.

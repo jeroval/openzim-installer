@@ -91,7 +91,7 @@ class OpenZimBridge:
 
 
 def build_server(bridge: OpenZimBridge) -> MCPServer:
-    """Creer la surface MCP minimale presentee a GPT-OSS et Qwen."""
+    """Creer la surface MCP minimale presentee aux modeles locaux."""
 
     server = MCPServer(
         "openzim-compatible",

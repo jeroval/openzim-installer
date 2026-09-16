@@ -79,6 +79,42 @@ if (Test-Path -LiteralPath $mcpPath) {
                     } else {
                         "Passerelle introuvable : $bridgePath (relancez l option 5)"
                     })
+                if ($bridgeReady) {
+                    $bridgeCommand = [string] $openZimServer.command
+                    if (-not (Test-Path -LiteralPath $bridgeCommand -PathType Leaf)) {
+                        Add-TestResult `
+                            -Test 'Acces reel OpenZIM' `
+                            -Success $false `
+                            -Detail "Interpreteur OpenZIM introuvable : $bridgeCommand"
+                    }
+                    else {
+                        $bridgeArguments = @($bridgePath, '--self-test') +
+                            @($serverArguments | Select-Object -Skip 1)
+                        $previousErrorActionPreference = $ErrorActionPreference
+                        $ErrorActionPreference = 'Continue'
+                        try {
+                            # Les journaux de demarrage normaux arrivent sur stderr.
+                            # Ils ne doivent pas etre classes comme erreurs PowerShell.
+                            $bridgeOutput = & $bridgeCommand @bridgeArguments 2>&1 | Out-String
+                            $bridgeExitCode = $LASTEXITCODE
+                            $bridgeSummary = @(
+                                $bridgeOutput -split "`r?`n" |
+                                    Where-Object { $_ -match '^(OK|ECHEC)\s*:' }
+                            ) | Select-Object -Last 1
+                            Add-TestResult `
+                                -Test 'Acces reel OpenZIM' `
+                                -Success ($bridgeExitCode -eq 0) `
+                                -Detail $(if ($bridgeSummary) {
+                                    $bridgeSummary
+                                } else {
+                                    "Auto-test termine avec le code $bridgeExitCode"
+                                })
+                        }
+                        finally {
+                            $ErrorActionPreference = $previousErrorActionPreference
+                        }
+                    }
+                }
             }
             elseif ($usesAdvancedMode) {
                 Add-TestResult `
@@ -95,7 +131,10 @@ if (Test-Path -LiteralPath $mcpPath) {
         }
     }
     catch {
-        Add-TestResult -Test 'Configuration MCP' -Success $false -Detail "JSON invalide : $mcpPath"
+        Add-TestResult `
+            -Test 'Configuration MCP' `
+            -Success $false `
+            -Detail "Lecture ou diagnostic impossible : $($_.Exception.Message)"
     }
 }
 else {
@@ -145,6 +184,28 @@ try {
         -Test 'Qwen2.5-Coder (optionnel)' `
         -Present (@($modelNames -match '^qwen2\.5-coder:14b-instruct-q5_K_M$').Count -gt 0) `
         -ExpectedModel 'qwen2.5-coder:14b-instruct-q5_K_M'
+    Add-OptionalModelResult `
+        -Test 'Devstral Agent 24B (optionnel)' `
+        -Present (@($modelNames -match '^devstral-small-2:24b-instruct-2512-q4_K_M$').Count -gt 0) `
+        -ExpectedModel 'devstral-small-2:24b-instruct-2512-q4_K_M'
+
+    $toolCapableAlternative = @(
+        $modelNames | Where-Object {
+            $_ -match '(?i)(qwen3|devstral|qwen3-coder)'
+        }
+    ) | Select-Object -First 1
+    if (@($modelNames -match '^gpt-oss:20b').Count -gt 0) {
+        $results.Add([pscustomobject]@{
+            Test   = 'Edition de code GPT-OSS'
+            Etat   = 'ATTENTION'
+            Detail = if ($toolCapableAlternative) {
+                "Les gros patchs peuvent provoquer HTTP 500 dans Ollama. Alternative detectee : $toolCapableAlternative"
+            }
+            else {
+                'Les gros patchs peuvent provoquer HTTP 500 dans Ollama. Utilisez des modifications courtes ou un modele agentique compatible.'
+            }
+        })
+    }
 }
 catch {
     Add-TestResult -Test 'Serveur Ollama' -Success $false -Detail 'API locale inaccessible sur 127.0.0.1:11434'

@@ -60,20 +60,48 @@ Selectionner une variante locale de `qwen2.5-coder`, puis demander :
 La reponse est valide si OpenZIM est appele, si MDN est cite et si l'exemple
 correspond au passage recupere.
 
-## 5. Validation hors ligne
+## 5. Scenario Devstral Agent 24B
+
+Selectionner `devstral-small-2:24b-instruct-2512-q4_K_M`, puis demander :
+
+> Agis comme un agent de developpement. Consulte d'abord OpenZIM pour trouver
+> la documentation de `pathlib.Path`, cite l'archive utilisee, puis propose
+> une modification courte limitee a un seul fichier. Ne modifie rien avant
+> d'avoir presente ton plan.
+
+La reponse est valide si Devstral effectue un veritable appel d'outil OpenZIM,
+cite la source locale et respecte la sequence recherche, plan, modification.
+
+## Erreur HTTP 500 pendant une modification de code
+
+Le message `error parsing tool call` avec un contenu `apply_patch` signifie que
+le modèle a produit un appel JSON invalide avant l'exécution du patch. Ce n'est
+pas une erreur OpenZIM et le fichier demandé n'a normalement pas été modifié.
+
+1. Démarrez une nouvelle conversation pour ne pas conserver l'appel invalide.
+2. Demandez une modification courte, limitée à un fichier et à une seule méthode.
+3. Exigez des chemins relatifs au projet dans les patchs.
+4. Si GPT-OSS échoue encore, essayez Devstral Small 2, proposé dans le sélecteur
+   précisément pour le code agentique et les appels d'outils. Qwen2.5-Coder peut
+   produire l'appel sous forme de texte selon son template ; vérifiez donc qu'un
+   véritable appel apparaît dans l'historique.
+5. Une mise à jour d'Ollama ou du modèle peut modifier ce comportement : relancez
+   l'option 6 après chaque mise à jour importante.
+
+## 6. Validation hors ligne
 
 1. Terminer tous les telechargements avant ce test.
 2. Desactiver temporairement Wi-Fi/Ethernet depuis Windows.
 3. Confirmer que `http://127.0.0.1:11434/api/tags` repond encore.
 4. Redemarrer le serveur MCP `openzim` dans VS Code.
-5. Rejouer les deux scenarios precedents.
+5. Rejouer les scenarios precedents avec les modeles installes.
 6. Verifier dans le Gestionnaire des taches qu'Ollama et OpenZIM restent des
    processus locaux et qu'aucune etape ne reclame une ressource distante.
 
 La coupure reseau doit etre effectuee manuellement : un script ne doit pas
 desactiver vos interfaces reseau sans confirmation explicite.
 
-## 6. Mise a jour periodique
+## 7. Mise a jour periodique
 
 Afficher d'abord le plan :
 

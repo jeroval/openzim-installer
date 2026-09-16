@@ -17,11 +17,16 @@ Installe `gpt-oss:20b` s'il est absent. Telechargement d'environ 14 Go.
 Installe `qwen2.5-coder:14b-instruct-q5_K_M` s'il est absent. Telechargement
 d'environ 11 Go.
 
+.PARAMETER DevstralAgent24B
+Installe `devstral-small-2:24b-instruct-2512-q4_K_M` s'il est absent.
+Ce modele d'environ 15 Go est specialise dans le code agentique, l'exploration
+de depots, les modifications multi-fichiers et l'utilisation d'outils.
+
 .EXAMPLE
 .\scripts\Install-LocalAi.ps1 -GptOss20B
 
 .EXAMPLE
-.\scripts\Install-LocalAi.ps1 -GptOss20B -QwenCoder14B
+.\scripts\Install-LocalAi.ps1 -DevstralAgent24B
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
@@ -30,7 +35,10 @@ param(
     [switch] $GptOss20B,
 
     [Parameter()]
-    [switch] $QwenCoder14B
+    [switch] $QwenCoder14B,
+
+    [Parameter()]
+    [switch] $DevstralAgent24B
 )
 
 Set-StrictMode -Version Latest
@@ -147,9 +155,10 @@ Write-Host '============================================================' -Foreg
 Write-Host 'Ollama execute les modeles sur votre ordinateur.'
 Write-Host 'Les composants deja installes seront conserves et ignores.'
 Write-Host 'Le volume des modeles est distinct du budget des archives ZIM.'
-Write-Host ('Selection : GPT-OSS 20B = {0} | Qwen Coder 14B = {1}' -f `
+Write-Host ('Selection : GPT-OSS 20B = {0} | Qwen Coder 14B = {1} | Devstral Agent 24B = {2}' -f `
     $(if ($GptOss20B) { 'oui' } else { 'non' }), `
-    $(if ($QwenCoder14B) { 'oui' } else { 'non' }))
+    $(if ($QwenCoder14B) { 'oui' } else { 'non' }), `
+    $(if ($DevstralAgent24B) { 'oui' } else { 'non' }))
 
 $ollamaPath = Get-OllamaExecutable
 if ([string]::IsNullOrWhiteSpace($ollamaPath)) {
@@ -175,7 +184,7 @@ else {
     Write-Host "Ollama deja installe : $ollamaPath" -ForegroundColor Green
 }
 
-if (-not $GptOss20B -and -not $QwenCoder14B) {
+if (-not $GptOss20B -and -not $QwenCoder14B -and -not $DevstralAgent24B) {
     Write-Host 'Aucun modele selectionne. Installation de Ollama terminee.' -ForegroundColor Green
     return
 }
@@ -205,6 +214,13 @@ if ($QwenCoder14B) {
         -OllamaPath $ollamaPath `
         -Model 'qwen2.5-coder:14b-instruct-q5_K_M' `
         -ApproximateSize '11 Go' `
+        -InstalledModels $installedModels
+}
+if ($DevstralAgent24B) {
+    Install-OllamaModelIfMissing `
+        -OllamaPath $ollamaPath `
+        -Model 'devstral-small-2:24b-instruct-2512-q4_K_M' `
+        -ApproximateSize '15 Go' `
         -InstalledModels $installedModels
 }
 
