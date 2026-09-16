@@ -228,6 +228,7 @@ $gitIgnoreBody = @'
 .github/copilot-instructions.md
 
 # Bibliotheque et etat d execution locaux
+debug.log
 *.zim
 *.zim.part
 download-plan.json

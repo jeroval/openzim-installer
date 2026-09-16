@@ -4,7 +4,7 @@
     "catalogUri":  "https://library.kiwix.org/catalog/v2/entries?lang=eng,fra\u0026count=-1",
     "maxLibrarySizeGB":  50,
     "reserveFreeSpaceGB":  5,
-    "mode":  "advanced",
+    "mode":  "simple",
     "usageProfile":  "general",
     "includeOptional":  true,
     "preferNoPictures":  true,

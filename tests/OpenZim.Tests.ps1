@@ -261,6 +261,7 @@ Describe 'Instructions IA du projet' {
         if (-not $gitIgnore.Contains('.env') -or
             -not $gitIgnore.Contains('.vscode/mcp.json') -or
             -not $gitIgnore.Contains('.github/copilot-instructions.md') -or
+            -not $gitIgnore.Contains('debug.log') -or
             -not $gitIgnore.Contains('*.zim') -or
             -not $gitIgnore.Contains('zim-inventory.json')) {
             throw 'Les regles Git existantes ou locales OpenZIM sont absentes.'
