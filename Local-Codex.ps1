@@ -11,19 +11,25 @@ Les anciennes commandes restent disponibles pour la bibliotheque Knowledge.
 param(
     [ValidateSet('Menu','Plan','Install','Configure','Benchmark','Certify','Status','Doctor','Update','Rollback','Uninstall','Knowledge')]
     [string] $Action = 'Menu',
-    [string] $ConfigPath = (Join-Path $PSScriptRoot 'config\LocalCodex.Settings.json'),
-    [string] $StateDirectory = (Join-Path $PSScriptRoot '.local-codex'),
-    [string] $ProjectDirectory = $PSScriptRoot,
+    [string] $ConfigPath,
+    [string] $StateDirectory,
+    [string] $ProjectDirectory,
     [switch] $DownloadModel,
     [switch] $SkipValidation,
     [switch] $Promote
 )
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+
+# Initialiser les chemins par défaut uniquement si non fournis
+if (-not $ConfigPath) { $ConfigPath = Join-Path $PSScriptRoot 'config\LocalCodex.Settings.json' }
+if (-not $StateDirectory) { $StateDirectory = Join-Path $PSScriptRoot '.local-codex' }
+if (-not $ProjectDirectory) { $ProjectDirectory = $PSScriptRoot }
+
+# Normaliser les chemins
+$ConfigPath = [IO.Path]::GetFullPath($ConfigPath)
+$StateDirectory = [IO.Path]::GetFullPath($StateDirectory)
 foreach ($module in @('LocalCodex.Common','Models','Hermes','OpenZim','Hardware','Doctor','Benchmark','Certification','Updates','OpenZim.Common')) {
     Import-Module (Join-Path $PSScriptRoot "modules\$module.psm1")
 }
-$StateDirectory = [IO.Path]::GetFullPath($StateDirectory)
 $settings = Get-LocalCodexConfiguration $ConfigPath
 $model = Get-LocalCodexModel $settings
 
