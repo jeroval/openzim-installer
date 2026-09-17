@@ -42,3 +42,15 @@ une technologie ou un comportement dont tu n'es pas certain :
 - Exécute les validations disponibles et ne prétends jamais avoir exécuté un test non lancé.
 - Explique toute dérogation aux standards et termine par un résumé des vérifications.
 <!-- openzim-agent-policy:end -->
+
+## Migration Local-Codex
+
+- Recherche les fichiers utiles avant de les lire ; n'importe pas tout le depot
+  ni les runtimes presents sous `.local-codex` dans le contexte.
+- Prepare les changements multi-fichiers en respectant les modules existants.
+- Hermes reste responsable des outils agentiques, sessions, memoire et skills.
+- Apres un echec : lis le resultat, identifie la cause, corrige puis reteste.
+- Separe tests hors reseau, integration locale et benchmarks lourds.
+- Ne marque jamais un profil `certified` sur la seule affirmation du modele :
+  exige les preuves d'outils, les tests independants et tous les controles requis.
+- Conserve les anciens parcours tant que leur remplacement n'est pas valide.

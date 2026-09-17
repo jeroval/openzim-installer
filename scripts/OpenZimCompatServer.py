@@ -110,7 +110,13 @@ def build_server(bridge: OpenZimBridge) -> MCPServer:
 
     @server.tool(description="Rechercher une question dans toute la base ZIM locale.")
     async def openzim_search(query: str) -> str:
-        return await bridge.query(query)
+        # Sans archive explicite, zim_query peut refuser une question libre des
+        # qu'il existe plusieurs ZIM. Cette intention est documentee par son
+        # message de recuperation et garantit la recherche multi-archives.
+        clean_query = query.strip()
+        if not clean_query:
+            raise ValueError("La question OpenZIM ne peut pas etre vide.")
+        return await bridge.query("search all files for " + clean_query)
 
     @server.tool(description="Rechercher dans une archive ZIM deja listee.")
     async def openzim_search_archive(query: str, zim_file_path: str) -> str:

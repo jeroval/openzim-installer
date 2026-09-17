@@ -8,7 +8,12 @@ $sourcesFixture = Join-Path $PSScriptRoot 'fixtures\sources.json'
 
 Describe 'Scripts PowerShell' {
     It 'ne contient aucune erreur de syntaxe' {
-        $scripts = Get-ChildItem -LiteralPath $projectRoot -Filter '*.ps1' -File -Recurse
+        # Les runtimes tiers sous .local-codex ne font pas partie du code du depot.
+        $scripts = @(Get-ChildItem -LiteralPath $projectRoot -Filter '*.ps1' -File)
+        foreach ($directory in @('scripts', 'modules', 'tests')) {
+            $scripts += @(Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -File -Recurse |
+                Where-Object Extension -In @('.ps1', '.psm1'))
+        }
         foreach ($script in $scripts) {
             $tokens = $null
             $errors = $null

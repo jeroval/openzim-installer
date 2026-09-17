@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "qwen35-9b-q4",
+      "family": "Qwen",
+      "generation": "3.5",
+      "variant": "9b",
+      "parametersBillions": 9.65,
+      "quantization": "Q4_K_M",
+      "ollamaTag": "qwen3.5:9b-q4_K_M",
+      "supportedContextTokens": null,
+      "capabilities": { "tools": true, "thinking": true },
+      "status": "candidate",
+      "hardware": { "approximateDownloadGB": 6.6, "minimumRamGB": 16, "preferredVramGB": 10, "constraintsVerified": false },
+      "certification": { "date": null, "version": null, "report": null },
+      "source": "https://ollama.com/library/qwen3.5:9b-q4_K_M",
+      "verifiedAt": "2026-09-17"
+    }
+  ]
+}

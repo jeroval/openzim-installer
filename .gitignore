@@ -1,4 +1,7 @@
 .logs/
+.local-codex/
+.vscode/settings.json
+.vscode/settings.json.previous
 debug.log
 *.part
 *.zim

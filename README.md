@@ -1,4 +1,21 @@
-# Base documentaire locale OpenZIM pour agent IA
+# Local-Codex
+
+Migration progressive vers un agent de developpement local : **VS Code / ACP →
+Hermes → Ollama / Qwen**, avec OpenZIM comme bibliotheque documentaire.
+Le nouveau parcours se lance avec `Start-LocalCodex.cmd`.
+
+```powershell
+.\Local-Codex.ps1 -Action Plan
+.\Local-Codex.ps1 -Action Install
+.\Local-Codex.ps1 -Action Doctor
+```
+
+Le profil reste candidat jusqu'a reussite de la certification. Aucun gros modele
+ni ZIM n'est telecharge implicitement. Voir le [guide Local-Codex](docs/Local-Codex.md)
+pour les prerequis, commandes, mises a jour, rollback et limites, ainsi que
+[l'audit de migration](docs/Migration-LocalCodex.md).
+
+## Parcours historique OpenZIM conserve
 
 Cette boite a outils installe OpenZIM MCP, construit une bibliotheque Kiwix
 classee et configure VS Code. Les telechargements ne sont jamais lances par
