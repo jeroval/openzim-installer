@@ -61,6 +61,35 @@ class CertificationTests(unittest.TestCase):
         self.assertTrue(certify.has_two_file_diagnosis(complete))
         self.assertFalse(certify.has_two_file_diagnosis(incomplete))
 
+    def test_nested_hermes_read_is_accepted_after_successful_execution(self):
+        calls = {'call-1': json.dumps({
+            'code': 'from hermes_tools import read_file\nprint(read_file(path="AGENTS.md"))'
+        })}
+        tools = [{
+            'tool_name': 'execute_code',
+            'tool_call_id': 'call-1',
+            'content': json.dumps({
+                'status': 'success', 'output': '1|fixture', 'exit_code': 0,
+                'tool_calls_made': 1
+            })
+        }]
+        self.assertTrue(certify.has_successful_file_read(tools, calls))
+
+    def test_failed_or_only_mentioned_nested_read_is_rejected(self):
+        calls = {
+            'failed': json.dumps({'code': 'print(read_file(path="missing.py"))'}),
+            'mentioned': json.dumps({'code': 'print("read_file(path=fixture.py)")'})
+        }
+        tools = [
+            {'tool_name': 'execute_code', 'tool_call_id': 'failed',
+             'content': json.dumps({'status': 'error', 'output': 'missing',
+                                    'exit_code': 1, 'tool_calls_made': 1})},
+            {'tool_name': 'execute_code', 'tool_call_id': 'mentioned',
+             'content': json.dumps({'status': 'success', 'output': 'read_file(path=fixture.py)',
+                                    'exit_code': 0, 'tool_calls_made': 0})}
+        ]
+        self.assertFalse(certify.has_successful_file_read(tools, calls))
+
 
 class BenchmarkTests(unittest.TestCase):
     def test_rejects_remote_endpoint(self):

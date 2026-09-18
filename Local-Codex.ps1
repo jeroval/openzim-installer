@@ -111,6 +111,7 @@ if ($Action -eq 'Settings') {
     Write-Host ("  Ollama           : {0}" -f $settings.ollama.baseUrl)
     Write-Host ("  Revision Hermes  : {0}" -f $settings.hermes.revision)
     Write-Host ("  Reprise auto     : {0} tentatives maximum sur erreurs transitoires" -f $settings.hermes.apiMaxRetries)
+    Write-Host ("  Chat natif       : {0} + agent {1}" -f $settings.integration.nativeModelExtension, $settings.integration.nativeAgentName)
     Write-Host ("  RAM / VRAM       : {0} Go / {1} Go" -f $hardware.ramTotalGB, $hardware.vramGB)
     Write-Host ("  GPU              : {0}" -f (($hardware.gpu | ForEach-Object Name) -join '; '))
     Show-LocalCodexComponentLocations @(Get-LocalCodexComponentInventory $settings $StateDirectory $ProjectDirectory)
@@ -187,9 +188,10 @@ try {
         New-LocalCodexModelProfile $settings $StateDirectory -DownloadModel:$DownloadModel | Out-Null
         Write-LocalCodexInstallationResult "Modele pret : $($model.ollamaTag)"
 
-        Write-LocalCodexInstallationStep 6 $installationTotalSteps 'Integration Visual Studio Code' 'Installation du client ACP qui affiche Hermes comme agent dans VS Code.'
-        Install-LocalCodexVSCodeExtension ([string] $settings.integration.vscodeExtension)
-        Write-LocalCodexInstallationResult 'Extension ACP Client disponible'
+        Write-LocalCodexInstallationStep 6 $installationTotalSteps 'Integration Visual Studio Code' 'Installation du client ACP/Hermes et du fournisseur Ollama pour le chat natif.'
+        Install-LocalCodexVSCodeExtension ([string] $settings.integration.vscodeExtension) 'Extension ACP Client'
+        Install-LocalCodexVSCodeExtension ([string] $settings.integration.nativeModelExtension) 'Extension Ollama pour le chat natif'
+        Write-LocalCodexInstallationResult 'ACP Client et fournisseur Ollama natif disponibles'
     }
     if ($Action -in @('Install','Update','Configure')) {
         if ($Action -in @('Install','Update')) {

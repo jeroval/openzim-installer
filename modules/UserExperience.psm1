@@ -20,11 +20,13 @@ function ConvertTo-LocalCodexCheckRow {
         'Git' { @('Git', 'Gestion des sources et des projets.', 'Installez Git ou relancez l installation.') }
         'VSCode' { @('Visual Studio Code', 'Editeur qui heberge l agent local.', 'Installez ou relancez Visual Studio Code.') }
         'ACPClient' { @('Extension ACP Client', 'Affiche dans VS Code le chat, les outils, les commandes et les diffs de Hermes.', 'Reinstallez l extension ACP depuis Local-Codex.') }
+        'OllamaVSCode' { @('Extension Ollama VS Code', 'Expose le modele local dans le chat natif de VS Code.', 'Reinstallez Local-Codex puis rechargez VS Code.') }
         'Hermes' { @('Hermes Agent', 'Orchestre les fichiers, le terminal, Git, les tests et MCP.', 'Relancez l installation de Local-Codex.') }
         'ACP' { @('Passerelle ACP', 'Relie Hermes a l interface de Visual Studio Code.', 'Reparez Hermes puis reinitialisez le projet.') }
         'Ollama' { @('Ollama', 'Execute le modele de langage sur cette machine.', 'Demarrez Ollama ou relancez son installation.') }
         'Qwen' { @('Modele Qwen', 'Modele local utilise par Hermes avec un contexte minimum de 64K.', 'Reinstallez le modele recommande depuis l option 1.') }
         'Configuration' { @('Configuration du projet', 'Relie ce projet VS Code au profil Hermes actif.', 'Utilisez la racine du projet, puis relancez l option 2.') }
+        'NativeChat' { @('Chat natif VS Code', 'Relie le custom agent natif a Ollama et OpenZIM.', 'Relancez l option 2 sur ce projet puis rechargez VS Code.') }
         'Benchmark' { @('Test de performance', 'Verifie que le modele repond avec le profil et le contexte choisis.', 'Relancez l installation ou le benchmark.') }
         'OpenZimMCP' { @('OpenZIM MCP', 'Donne a Hermes un acces local aux archives documentaires ZIM.', 'Reparez OpenZIM MCP depuis le menu Documentation locale.') }
         'ZimLibrary' { @('Bibliotheque ZIM', 'Contient les documentations consultables sans Internet.', 'Telechargez au moins une archive depuis le menu Documentation locale.') }
@@ -59,7 +61,7 @@ function Get-LocalCodexVerificationView {
 
     $groups = [ordered]@{
         SYSTEM = @('Git', 'VSCode')
-        AI = @('Ollama', 'Qwen', 'Hermes', 'ACPClient', 'ACP', 'Configuration', 'Benchmark')
+        AI = @('Ollama', 'Qwen', 'Hermes', 'ACPClient', 'OllamaVSCode', 'ACP', 'Configuration', 'NativeChat', 'Benchmark')
         AGENT = @('AgentScenario', 'Agent.')
         KNOWLEDGE = @('OpenZimMCP', 'ZimLibrary')
     }

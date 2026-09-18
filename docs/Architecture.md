@@ -17,8 +17,13 @@ ADAPTATEURS EXTERNES
 Prerequisites, Hermes, OpenZim, Hardware
         |
         v
-Git, VS Code/ACP, Ollama/Qwen, uv/Python isole, OpenZIM MCP, Windows
+Git, VS Code/ACP et chat natif, Ollama/Qwen, uv/Python isole, OpenZIM MCP, Windows
 ```
+
+Deux interfaces partagent le meme modele et la meme bibliotheque : ACP confie
+l'orchestration a Hermes, tandis que le chat natif utilise le custom agent
+`Local-Codex Native` et les outils integres de VS Code. Chaque integration
+possede sa propre declaration OpenZIM ; le health check exige leur coherence.
 
 ## Regles de dependance
 

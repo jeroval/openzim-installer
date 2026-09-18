@@ -81,21 +81,24 @@ function Install-LocalCodexPrerequisites {
 
 function Install-LocalCodexVSCodeExtension {
     [CmdletBinding(SupportsShouldProcess)]
-    param([Parameter(Mandatory)][string] $ExtensionId)
+    param(
+        [Parameter(Mandatory)][string] $ExtensionId,
+        [string] $DisplayName = 'extension VS Code'
+    )
 
     $code = Find-LocalCodexCommand @('code.cmd', 'code.exe')
     if ($null -eq $code) { throw 'Visual Studio Code est introuvable.' }
     $extensions = @(& $code.Source --list-extensions)
     if ($LASTEXITCODE -ne 0) { throw 'Inventaire des extensions VS Code impossible.' }
     if (@($extensions | Where-Object { $_ -ieq $ExtensionId }).Count -gt 0) {
-        Write-Host "      [OK] Extension ACP deja installee : $ExtensionId" -ForegroundColor Green
+        Write-Host "      [OK] $DisplayName deja installee : $ExtensionId" -ForegroundColor Green
         return
     }
-    if ($PSCmdlet.ShouldProcess($ExtensionId, 'Installer extension ACP dans VS Code')) {
-        Write-Host "      [INFO] Installation de l extension ACP : $ExtensionId" -ForegroundColor Cyan
+    if ($PSCmdlet.ShouldProcess($ExtensionId, "Installer $DisplayName dans VS Code")) {
+        Write-Host "      [INFO] Installation de $DisplayName : $ExtensionId" -ForegroundColor Cyan
         & $code.Source --install-extension $ExtensionId
-        if ($LASTEXITCODE -ne 0) { throw 'Installation du client ACP echouee.' }
-        Write-Host "      [OK] Extension ACP installee : $ExtensionId" -ForegroundColor Green
+        if ($LASTEXITCODE -ne 0) { throw "Installation de $DisplayName echouee." }
+        Write-Host "      [OK] $DisplayName installee : $ExtensionId" -ForegroundColor Green
     }
 }
 

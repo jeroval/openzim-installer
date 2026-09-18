@@ -52,10 +52,14 @@ function Get-LocalCodexComponentInventory {
     $extensionRoot = Join-Path $env:USERPROFILE '.vscode\extensions'
     $extension = @(Get-ChildItem -LiteralPath $extensionRoot -Directory -Filter "$($Settings.integration.vscodeExtension)-*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1)
     & $add 'Extension ACP Client' 'Connexion de VS Code a Hermes par ACP' $(if ($extension.Count) { $extension[0].FullName } else { $extensionRoot }) ($extension.Count -eq 1)
+    $nativeExtension = @(Get-ChildItem -LiteralPath $extensionRoot -Directory -Filter "$($Settings.integration.nativeModelExtension)-*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1)
+    & $add 'Extension Ollama VS Code' 'Expose les modeles Ollama dans le chat natif' $(if ($nativeExtension.Count) { $nativeExtension[0].FullName } else { $extensionRoot }) ($nativeExtension.Count -eq 1)
     & $add 'Etat Local-Codex' 'Profils, rapports, selection machine et versions' $StateDirectory (Test-Path -LiteralPath $StateDirectory -PathType Container)
     & $add 'Journaux' 'Historique technique des operations' (Join-Path (Split-Path -Parent $PSScriptRoot) $Settings.logging.directory) (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) $Settings.logging.directory) -PathType Container)
     if (-not [string]::IsNullOrWhiteSpace($ProjectDirectory)) {
         & $add 'Configuration du projet' 'Declaration de l agent ACP pour ce projet' (Join-Path $ProjectDirectory '.vscode\settings.json') (Test-Path -LiteralPath (Join-Path $ProjectDirectory '.vscode\settings.json') -PathType Leaf)
+        & $add 'Agent natif VS Code' 'Instructions et outils optimises pour le modele local' (Join-Path $ProjectDirectory '.github\agents\local-codex-native.agent.md') (Test-Path -LiteralPath (Join-Path $ProjectDirectory '.github\agents\local-codex-native.agent.md') -PathType Leaf)
+        & $add 'MCP natif VS Code' 'Acces direct du chat natif a OpenZIM' (Join-Path $ProjectDirectory '.vscode\mcp.json') (Test-Path -LiteralPath (Join-Path $ProjectDirectory '.vscode\mcp.json') -PathType Leaf)
     }
     return @($items.ToArray())
 }
@@ -86,6 +90,13 @@ function Get-LocalCodexDoctor {
             if ($LASTEXITCODE -ne 0 -or $client.Count -ne 1) { throw "Installer le client ACP VS Code $extension." }
             $client[0]
         }
+        OllamaVSCode = {
+            $extensions = & (Get-Command code.cmd -ErrorAction Stop).Source --list-extensions --show-versions
+            $extension = [string] $Settings.integration.nativeModelExtension
+            $provider = @($extensions | Where-Object { $_ -like "$extension@*" })
+            if ($LASTEXITCODE -ne 0 -or $provider.Count -ne 1) { throw "Installer le fournisseur Ollama VS Code $extension." }
+            $provider[0]
+        }
         Hermes = { (Invoke-LocalCodexProcess $paths.Executable @('acp','--version') -Environment @{ HERMES_HOME = $paths.Home }).Output.Trim() }
         ACP = { (Invoke-LocalCodexProcess $paths.Executable @('acp','--check') -Environment @{ HERMES_HOME = $paths.Home }).Output.Trim() }
         Ollama = { (Invoke-LocalCodexOllama $Settings '/api/version').version }
@@ -115,6 +126,28 @@ function Get-LocalCodexDoctor {
                 throw 'Configuration ACP incoherente ou absente ; le mode chatbot seul n est pas accepte.'
             }
             "Hermes / Ollama / ACP coherents, contexte $($candidate.contextTokens), $($config.agent.api_max_retries) tentatives API"
+        }
+        NativeChat = {
+            $candidate = Read-LocalCodexJson $candidatePath
+            $nativeAgentPath = Join-Path $ProjectDirectory '.github\agents\local-codex-native.agent.md'
+            $nativeAgent = [IO.File]::ReadAllText($nativeAgentPath)
+            if ($nativeAgent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
+                $nativeAgent -notmatch 'openzim/\*' -or $nativeAgent -notmatch "'execute'") {
+                throw 'Agent natif Local-Codex absent ou incomplet.'
+            }
+            $nativeMcp = Read-LocalCodexJson (Join-Path $ProjectDirectory '.vscode\mcp.json')
+            $expectedMcp = Get-LocalCodexOpenZim $Settings
+            $nativeServer = $nativeMcp.servers.openzim
+            if ($null -eq $nativeServer -or $nativeServer.type -ne 'stdio' -or
+                $nativeServer.command -ne $expectedMcp.command -or
+                (@($nativeServer.args) -join "`n") -ne (@($expectedMcp.args) -join "`n")) {
+                throw 'Configuration OpenZIM du chat natif absente ou incoherente.'
+            }
+            $vscode = Read-LocalCodexJson (Join-Path $ProjectDirectory '.vscode\settings.json')
+            if ($vscode.'chat.useAgentsMdFile' -ne $true -or $vscode.'chat.includeApplyingInstructions' -ne $true) {
+                throw 'Instructions du projet desactivees pour le chat natif.'
+            }
+            "$($Settings.integration.nativeAgentName), OpenZIM natif, modele actif $($candidate.model)"
         }
         OpenZimMCP = { (Test-LocalCodexOpenZim $Settings).Output.Trim() }
         ZimLibrary = {

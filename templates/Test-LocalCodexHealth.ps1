@@ -70,6 +70,13 @@ Add-HealthCheck 'ACPClient' {
     $extension[0]
 }
 
+Add-HealthCheck 'OllamaVSCode' {
+    $code = Find-HealthCommand @('code.cmd','code.exe')
+    $extension = @(& $code.Source --list-extensions --show-versions | Where-Object { $_ -like 'ollama.ollama@*' })
+    if ($LASTEXITCODE -ne 0 -or $extension.Count -ne 1) { throw 'Extension officielle ollama.ollama absente.' }
+    $extension[0]
+}
+
 Add-HealthCheck 'ProjectACP' {
     $settingsPath = Join-Path $projectDirectory '.vscode\settings.json'
     $settings = Get-Content -LiteralPath $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -166,6 +173,32 @@ Add-HealthCheck 'AutomaticRetry' {
         throw 'Le garde-fou Hermes contre les reponses vides est desactive.'
     }
     "$retryCount tentatives maximum, garde-fou de reponse vide actif"
+}
+
+Add-HealthCheck 'NativeChat' {
+    $settingsPath = Join-Path $projectDirectory '.vscode\settings.json'
+    $settings = Get-Content -LiteralPath $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($settings.'chat.useAgentsMdFile' -ne $true -or $settings.'chat.includeApplyingInstructions' -ne $true) {
+        throw 'Chargement des instructions IA du projet desactive dans VS Code.'
+    }
+    $agentPath = Join-Path $projectDirectory '.github\agents\local-codex-native.agent.md'
+    $agentContent = Get-Content -LiteralPath $agentPath -Raw -Encoding UTF8
+    if ($agentContent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
+        $agentContent -notmatch "openzim/\*" -or $agentContent -notmatch "'execute'") {
+        throw 'Custom agent Local-Codex Native absent ou incomplet.'
+    }
+    $nativeMcpPath = Join-Path $projectDirectory '.vscode\mcp.json'
+    $nativeMcp = Get-Content -LiteralPath $nativeMcpPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $nativeServer = $nativeMcp.servers.openzim
+    $hermesServer = $hermesConfig.mcp_servers.openzim
+    if ($null -eq $nativeServer -or $nativeServer.type -ne 'stdio' -or
+        $nativeServer.command -ne $hermesServer.command -or
+        (@($nativeServer.args) -join "`n") -ne (@($hermesServer.args) -join "`n")) {
+        throw 'OpenZIM natif absent ou different de la configuration Hermes.'
+    }
+    $locations['NativeAgent'] = $agentPath
+    $locations['NativeMcp'] = $nativeMcpPath
+    'Agent natif, instructions et OpenZIM MCP coherents avec Hermes'
 }
 
 Add-HealthCheck 'OpenZimMCP' {
