@@ -154,6 +154,14 @@ function Write-LocalCodexInstallationResult {
     Write-Host "      [OK] $Message" -ForegroundColor Green
 }
 
+function Format-LocalCodexContext {
+    param([Parameter(Mandatory)][long] $Tokens)
+    if ($Tokens -gt 0 -and $Tokens % 1024 -eq 0) {
+        return ('{0}K ({1} tokens)' -f ([long] ($Tokens / 1024)), $Tokens)
+    }
+    return "$Tokens tokens"
+}
+
 function Show-LocalCodexInstallationHeader {
     param([Parameter(Mandatory)][string] $StateDirectory, [Parameter(Mandatory)] $Model,
         [Parameter(Mandatory)] $Settings)
@@ -166,7 +174,9 @@ function Show-LocalCodexInstallationHeader {
     Write-Host '  Ollama + Qwen  : moteur et modele IA executes localement'
     Write-Host '  OpenZIM MCP    : acces aux documentations .zim hors ligne'
     Write-Host "`nDossier Local-Codex : $StateDirectory" -ForegroundColor DarkGray
-    Write-Host "Modele selectionne   : $($Model.ollamaTag) ($($Settings.model.contextTokens) tokens)" -ForegroundColor DarkGray
+    Write-Host "Modele selectionne   : $($Model.ollamaTag)" -ForegroundColor DarkGray
+    Write-Host ("Contexte configure   : {0}" -f (Format-LocalCodexContext $Settings.model.contextTokens)) -ForegroundColor DarkGray
+    Write-Host ("Minimum Hermes       : {0}" -f (Format-LocalCodexContext $Settings.hermes.minimumContextTokens)) -ForegroundColor DarkGray
     Write-Host 'Les composants deja valides seront reutilises.' -ForegroundColor DarkGray
 }
 
@@ -197,4 +207,4 @@ function Show-LocalCodexComponentLocations {
     }
 }
 
-Export-ModuleMember -Function Get-LocalCodexVerificationView,Show-LocalCodexVerification,Write-LocalCodexInstallationStep,Write-LocalCodexInstallationResult,Show-LocalCodexInstallationHeader,Show-LocalCodexBenchmarkSummary,Show-LocalCodexComponentLocations
+Export-ModuleMember -Function Get-LocalCodexVerificationView,Show-LocalCodexVerification,Write-LocalCodexInstallationStep,Write-LocalCodexInstallationResult,Format-LocalCodexContext,Show-LocalCodexInstallationHeader,Show-LocalCodexBenchmarkSummary,Show-LocalCodexComponentLocations

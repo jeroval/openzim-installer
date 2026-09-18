@@ -295,6 +295,11 @@ Describe 'Hermes configuration offline' {
 }
 
 Describe 'Experience utilisateur Local-Codex' {
+    It 'distingue clairement le contexte configure du minimum Hermes' {
+        Format-LocalCodexContext 131072 | Should Be '128K (131072 tokens)'
+        Format-LocalCodexContext 64000 | Should Be '64000 tokens'
+        ([IO.File]::ReadAllText((Join-Path $root 'Local-Codex.ps1'))).Contains('au moins 64K de contexte') | Should Be $false
+    }
     It 'annonce READY uniquement lorsque toutes les preuves sont PASS' {
         $report = [pscustomobject]@{ checks = @(
             [pscustomobject]@{ name = 'Git'; status = 'PASS'; detail = 'git' }

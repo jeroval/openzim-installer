@@ -47,6 +47,10 @@ if ($Action -eq 'Menu') {
                 $hardware = Get-LocalCodexHardware
                 $selection = Get-LocalCodexModelChoices $settings $hardware
                 Write-Host "`nMODELES QWEN 3.5 COMPATIBLES" -ForegroundColor Cyan
+                Write-Host ("Contexte qui sera applique : {0}" -f
+                    (Format-LocalCodexContext $settings.model.contextTokens)) -ForegroundColor DarkGray
+                Write-Host ("Minimum requis par Hermes : {0}`n" -f
+                    (Format-LocalCodexContext $settings.hermes.minimumContextTokens)) -ForegroundColor DarkGray
                 $numberToId = @{}
                 $index = 0
                 foreach ($item in $selection.Choices) {
@@ -184,7 +188,10 @@ try {
         Install-LocalCodexHermes $settings $StateDirectory | Out-Null
         Write-LocalCodexInstallationResult 'Hermes et sa passerelle ACP sont valides'
 
-        Write-LocalCodexInstallationStep 5 $installationTotalSteps 'Modele IA Ollama' 'Verification du modele selectionne et creation d un profil Local-Codex avec au moins 64K de contexte.'
+        $configuredContext = Format-LocalCodexContext $settings.model.contextTokens
+        $minimumContext = Format-LocalCodexContext $settings.hermes.minimumContextTokens
+        Write-LocalCodexInstallationStep 5 $installationTotalSteps 'Modele IA Ollama' `
+            "Verification du modele et creation du profil avec le contexte configure : $configuredContext. Minimum Hermes : $minimumContext."
         New-LocalCodexModelProfile $settings $StateDirectory -DownloadModel:$DownloadModel | Out-Null
         Write-LocalCodexInstallationResult "Modele pret : $($model.ollamaTag)"
 
