@@ -24,7 +24,16 @@ et proposer une migration séparée si une amélioration globale est souhaitable
 Avant de coder :
 
 - reformuler l'objectif et les critères d'acceptation ;
-- inspecter les fichiers concernés et les conventions existantes ;
+- inventorier l'arborescence utile en excluant dépendances, builds, caches,
+  environnements virtuels et données volumineuses ;
+- lire les règles, le README, les manifestes, les points d'entrée, la
+  configuration et la structure des tests ;
+- cartographier dans la conversation les modules, responsabilités, flux et
+  dépendances concernés, sans créer un fichier de rapport supplémentaire ;
+- pour une correction locale, inspecter la cible, ses appelants, ses dépendances
+  directes et ses tests ; élargir progressivement pour un changement transversal ;
+- avant toute création, suppression, déplacement ou renommage, rechercher le
+  rôle du fichier, ses équivalents et toutes ses références ;
 - distinguer faits, hypothèses et inconnues ;
 - rechercher localement une API ou une syntaxe incertaine avec OpenZIM ;
 - évaluer les risques : données, sécurité, compatibilité et régression ;
@@ -33,6 +42,12 @@ Avant de coder :
 Pendant l'implémentation :
 
 - conserver le comportement non concerné ;
+- modifier l'implémentation canonique en place lors d'une revue, correction,
+  amélioration ou refactorisation ;
+- ne pas créer de variante `improved`, `new`, `v2`, `final`, `fixed`, `copy`
+  ou `backup` : utiliser Git pour conserver les versions ;
+- ne créer un fichier que pour une responsabilité distincte, le relier au point
+  d'entrée existant et expliquer pourquoi il est nécessaire ;
 - ne pas remplacer une modification utilisateur sans accord ;
 - valider les entrées externes et traiter les erreurs à leur origine ;
 - ajouter ou adapter les tests correspondant au changement ;
@@ -41,6 +56,8 @@ Pendant l'implémentation :
 Avant de terminer :
 
 - exécuter les tests, le formateur et le linter disponibles ;
+- vérifier que tous les imports, scripts, styles et liens locaux existent ;
+- signaler les fichiers orphelins et justifier chaque fichier créé ;
 - vérifier qu'aucun secret, fichier temporaire ou débogage ne reste ;
 - relire le diff et rechercher les effets secondaires ;
 - annoncer clairement ce qui a changé, ce qui a été vérifié et les limites.

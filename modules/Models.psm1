@@ -76,6 +76,9 @@ function Import-LocalCodexMachineSelection {
         Assert-LocalCodexAgentContext ([long] $selection.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
         $Settings.model.id = [string] $selection.modelId
         $Settings.model.contextTokens = [int] $selection.contextTokens
+        # Le benchmark doit certifier le contexte reellement choisi sur cette
+        # machine, pas la valeur par defaut du depot.
+        $Settings.benchmark.contexts = @([int] $selection.contextTokens)
     }
     return $Settings
 }

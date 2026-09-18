@@ -286,6 +286,8 @@ ancien diagnostic gere
         }
         $standards = [IO.File]::ReadAllText($standardsPath)
         if ($standards -notmatch 'applyTo:\s*[''\"]\*\*[''\"]' -or
+            -not $standards.Contains('local-codex-canonical-code-policy') -or
+            -not $standards.Contains('local-codex-project-map-policy') -or
             [regex]::Matches($standards, '<!-- openzim-standards:begin -->').Count -ne 1) {
             throw 'Le fichier de standards IA est invalide ou duplique.'
         }
@@ -294,8 +296,10 @@ ancien diagnostic gere
             throw 'La politique AGENTS.md geree est absente.'
         }
         if (-not $agents.Contains('au maximum trois questions') -or
-            -not $agents.Contains('demande claire, agis sans question rituelle')) {
-            throw 'La politique de dialogue adaptatif est absente de AGENTS.md.'
+            -not $agents.Contains('demande claire, agis sans question rituelle') -or
+            -not $agents.Contains('local-codex-canonical-code-policy') -or
+            -not $agents.Contains('local-codex-project-map-policy')) {
+            throw 'La politique de dialogue ou de préservation du code est absente de AGENTS.md.'
         }
         if (Test-Path -LiteralPath $legacyPromptPath) {
             throw 'L ancien prompt OpenZIM gere aurait du etre supprime.'
@@ -318,6 +322,8 @@ ancien diagnostic gere
             -not $nativeAgent.Contains("tools: ['read', 'search', 'edit', 'execute', 'openzim/*']") -or
             -not $nativeAgent.Contains('## Dialogue adaptatif et initiative') -or
             -not $nativeAgent.Contains('au maximum trois questions') -or
+            -not $nativeAgent.Contains('local-codex-canonical-code-policy') -or
+            -not $nativeAgent.Contains('local-codex-project-map-policy') -or
             $nativeAgentMarkerCount -ne 1) {
             throw 'Le custom agent natif est incomplet ou duplique.'
         }

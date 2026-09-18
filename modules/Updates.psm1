@@ -62,7 +62,18 @@ function Publish-LocalCodexCandidate {
         throw 'Candidat configure different du candidat certifie ; relancer Configure.'
     }
     if ($null -ne $releases.stable -and $releases.stable.home -eq $releases.candidate.home) { return $releases }
-    $releases.previous = $releases.stable
+    # Lors de la premiere promotion, conserver aussi un candidat actif plus
+    # ancien comme solution de retour. Sans cela, stable est encore null et le
+    # profil fonctionnel precedent devient inaccessible au rollback.
+    $releases.previous = if ($null -ne $releases.stable) {
+        $releases.stable
+    }
+    elseif ($null -ne $releases.active -and $releases.active.home -ne $releases.candidate.home) {
+        $releases.active
+    }
+    else {
+        $null
+    }
     $releases.stable = $releases.candidate
     $releases.stable.status = 'certified'
     $releases.active = $releases.stable

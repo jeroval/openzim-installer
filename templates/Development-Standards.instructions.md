@@ -26,6 +26,41 @@ applyTo: '**'
   API, syntaxe ou technologie incertaine.
 - Choisis le plus petit changement cohérent, réversible et vérifiable.
 
+## Implémentation canonique et création de fichiers
+
+<!-- local-codex-canonical-code-policy -->
+<!-- local-codex-project-map-policy -->
+
+Avant de modifier le code :
+
+- inventorie l'arborescence utile sans charger `node_modules`, `.git`, les
+  sorties de build, caches, environnements virtuels ou données volumineuses ;
+- lis les règles, le README, les manifestes, la configuration, les points
+  d'entrée et l'organisation des tests ;
+- établis dans la conversation une carte concise des modules, responsabilités,
+  flux et dépendances concernés, sans créer un nouveau fichier de rapport ;
+- pour une correction locale, inspecte le fichier cible, ses appelants, ses
+  dépendances directes et ses tests ; élargis progressivement pour un changement
+  transversal afin de conserver une vision globale sans saturer le contexte ;
+- avant de créer, déplacer, renommer ou supprimer un fichier, recherche son rôle,
+  les implémentations équivalentes et toutes ses références.
+
+- Interprète « revoir », « corriger », « améliorer » et « refactoriser » comme
+  une modification en place de l'implémentation canonique existante.
+- Avant toute création, recherche les fichiers ayant le même rôle et identifie
+  le point d'entrée canonique, ses imports et ses dépendances.
+- Ne crée pas de copie ou variante parallèle avec un nom tel que `improved`,
+  `new`, `v2`, `final`, `fixed`, `copy` ou `backup`, sauf demande explicite.
+  Utilise Git pour l'historique au lieu de dupliquer les fichiers.
+- Ne crée un fichier que pour une responsabilité distincte requise par
+  l'architecture existante ; relie-le au point d'entrée et justifie-le.
+- Si plusieurs implémentations concurrentes existent et que la version
+  canonique est incertaine, demande laquelle conserver et n'en crée pas une autre.
+- Avant livraison, vérifie que chaque import, script, feuille de style et lien
+  local pointe vers un fichier existant. Signale les fichiers orphelins.
+- Si aucun commit Git initial n'existe, avertis avant une modification étendue
+  et ne crée pas de commit sans demande explicite.
+
 ## Code et architecture
 
 - Préfère correction, lisibilité et simplicité à la sophistication.

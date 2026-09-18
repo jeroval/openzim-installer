@@ -138,4 +138,18 @@ réponses peuvent changer sensiblement la solution. Il recommande une approche,
 signale les risques importants et sépare les améliorations proposées du travail
 effectivement autorisé. Aucune commande spéciale n'est nécessaire.
 
+Une revue, correction ou refactorisation modifie par défaut les fichiers
+canoniques du projet. L'agent recherche le point d'entrée avant de créer un
+fichier et ne fabrique pas de copies `improved`, `v2`, `final` ou `fixed` pour
+conserver des versions : cet historique appartient à Git. Tout nouveau fichier
+doit avoir une responsabilité distincte, être relié à l'application existante
+et être justifié dans le bilan final. Le diagnostic vérifie que cette politique
+est bien installée dans le chat natif et dans les instructions partagées.
+
+Avant de modifier le code, l'agent cartographie l'arborescence utile, les points
+d'entrée, manifestes, modules, dépendances et tests. L'exploration est
+proportionnée : voisinage direct pour une correction locale, périmètre élargi
+progressivement pour une évolution transversale. Cette carte reste dans la
+conversation et ne produit pas un fichier supplémentaire dans le projet.
+
 Les projets, dépôts Git et archives ZIM ne sont jamais supprimés silencieusement.

@@ -186,14 +186,18 @@ Add-HealthCheck 'NativeChat' {
     $agentContent = Get-Content -LiteralPath $agentPath -Raw -Encoding UTF8
     if ($agentContent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
         $agentContent -notmatch "openzim/\*" -or $agentContent -notmatch "'execute'" -or
-        $agentContent -notmatch '## Dialogue adaptatif et initiative') {
+        $agentContent -notmatch '## Dialogue adaptatif et initiative' -or
+        $agentContent -notmatch 'local-codex-canonical-code-policy' -or
+        $agentContent -notmatch 'local-codex-project-map-policy') {
         throw 'Custom agent Local-Codex Native absent ou incomplet.'
     }
     $agentsPath = Join-Path $projectDirectory 'AGENTS.md'
     $agentsContent = Get-Content -LiteralPath $agentsPath -Raw -Encoding UTF8
     if ($agentsContent -notmatch 'au maximum trois questions' -or
-        $agentsContent -notmatch 'demande claire, agis sans question rituelle') {
-        throw 'Politique de dialogue adaptatif absente de AGENTS.md.'
+        $agentsContent -notmatch 'demande claire, agis sans question rituelle' -or
+        $agentsContent -notmatch 'local-codex-canonical-code-policy' -or
+        $agentsContent -notmatch 'local-codex-project-map-policy') {
+        throw 'Politique de dialogue ou de préservation du code absente de AGENTS.md.'
     }
     $nativeMcpPath = Join-Path $projectDirectory '.vscode\mcp.json'
     $nativeMcp = Get-Content -LiteralPath $nativeMcpPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -206,7 +210,7 @@ Add-HealthCheck 'NativeChat' {
     }
     $locations['NativeAgent'] = $agentPath
     $locations['NativeMcp'] = $nativeMcpPath
-    'Agent natif, dialogue adaptatif et OpenZIM MCP coherents avec Hermes'
+    'Agent natif, dialogue adaptatif, preservation du code canonique et OpenZIM MCP coherents avec Hermes'
 }
 
 Add-HealthCheck 'OpenZimMCP' {

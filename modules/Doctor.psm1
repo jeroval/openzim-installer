@@ -133,7 +133,9 @@ function Get-LocalCodexDoctor {
             $nativeAgentPath = Join-Path $ProjectDirectory '.github\agents\local-codex-native.agent.md'
             $nativeAgent = [IO.File]::ReadAllText($nativeAgentPath)
             if ($nativeAgent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
-                $nativeAgent -notmatch 'openzim/\*' -or $nativeAgent -notmatch "'execute'") {
+                $nativeAgent -notmatch 'openzim/\*' -or $nativeAgent -notmatch "'execute'" -or
+                $nativeAgent -notmatch 'local-codex-canonical-code-policy' -or
+                $nativeAgent -notmatch 'local-codex-project-map-policy') {
                 throw 'Agent natif Local-Codex absent ou incomplet.'
             }
             $nativeMcp = Read-LocalCodexJson (Join-Path $ProjectDirectory '.vscode\mcp.json')

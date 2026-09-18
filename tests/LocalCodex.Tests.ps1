@@ -57,6 +57,59 @@ Describe 'Promotion et rollback offline' {
         { Publish-LocalCodexCandidate ([pscustomobject]@{}) $state } | Should Throw
         Test-Path (Join-Path $state 'releases.json') | Should Be $false
     }
+    It 'conserve le candidat actif precedent lors de la premiere promotion' {
+        Mock Get-LocalCodexFingerprint { 'fixture' } -ModuleName Updates
+        $state = Join-Path $TestDrive 'first-promotion'
+        $candidateHome = Join-Path $state 'candidate-home'
+        [IO.Directory]::CreateDirectory($candidateHome) | Out-Null
+        $configPath = Join-Path $candidateHome 'config.yaml'
+        Write-LocalCodexJson $configPath @{ model='new' }
+        $executable = Join-Path $candidateHome 'hermes.exe'
+        [IO.File]::WriteAllText($executable, 'fixture')
+        $global:localCodexTestCandidateHome = $candidateHome
+        $global:localCodexTestCandidateExecutable = $executable
+        Mock Get-LocalCodexHermesPaths {
+            [pscustomobject]@{
+                Home=$global:localCodexTestCandidateHome
+                Executable=$global:localCodexTestCandidateExecutable
+            }
+        } -ModuleName Updates
+        $revision = 'a' * 40
+        $candidate = @{
+            model='new'; contextTokens=131072; hermesRevision=$revision
+        }
+        Write-LocalCodexJson (Join-Path $state 'candidate.json') $candidate
+        $releaseCandidate = @{
+            status='candidate'; model='new'; contextTokens=131072
+            revision=$revision; home=$candidateHome; executable=$executable
+            configHash=(Get-FileHash $configPath).Hash
+        }
+        $oldActive = @{
+            status='candidate'; model='old'; contextTokens=65536
+            revision=$revision; home=(Join-Path $state 'old-home')
+            executable='old-hermes.exe'; configHash='OLD'
+        }
+        Write-LocalCodexJson (Join-Path $state 'releases.json') @{
+            schemaVersion=1; active=$oldActive; stable=$null
+            previous=$null; candidate=$releaseCandidate
+        }
+        $required = @('Git','VSCode','ACPClient','OllamaVSCode','Hermes','ACP','Ollama','Qwen','Configuration',
+            'NativeChat','OpenZimMCP','ZimLibrary','Benchmark','AgentScenario','Agent.acp','Agent.streaming',
+            'Agent.toolActivity','Agent.permissionRequest','Agent.diffPresentation','Agent.search',
+            'Agent.read','Agent.plan','Agent.diagnosis','Agent.multiFileEdit','Agent.patch',
+            'Agent.terminal','Agent.observedFailure','Agent.retest','Agent.build',
+            'Agent.testsPreserved','Agent.openzimCall','Agent.documentationRetrieval',
+            'Agent.completed','Agent.noExternalNetwork')
+        Write-LocalCodexJson (Join-Path $state 'certification.json') @{
+            status='PASS'; fingerprint='fixture'
+            checks=@($required | ForEach-Object { @{ name=$_; status='PASS' } })
+        }
+        $settings = [pscustomobject]@{ hermes=[pscustomobject]@{ revision=$revision } }
+        $result = Publish-LocalCodexCandidate $settings $state
+        $result.active.model | Should Be 'new'
+        $result.stable.model | Should Be 'new'
+        $result.previous.model | Should Be 'old'
+    }
     It 'refuse le rollback si la configuration precedente a change' {
         $state = Join-Path $TestDrive 'rollback'
         $previousHome = Join-Path $state 'previous'
@@ -95,10 +148,12 @@ Describe 'Local-Codex configuration et catalogue offline' {
     It 'persiste et recharge le choix machine' {
         $settings = Get-LocalCodexConfiguration (Join-Path $root 'config\LocalCodex.Settings.json')
         $state = Join-Path $TestDrive 'machine-state'
-        Save-LocalCodexMachineSelection $state 'qwen35-2b' 65536
+        Save-LocalCodexMachineSelection $state 'qwen35-2b' 131072
         $loaded = Import-LocalCodexMachineSelection $settings $state
         $loaded.model.id | Should Be 'qwen35-2b'
-        $loaded.model.contextTokens | Should Be 65536
+        $loaded.model.contextTokens | Should Be 131072
+        @($loaded.benchmark.contexts).Count | Should Be 1
+        @($loaded.benchmark.contexts)[0] | Should Be 131072
     }
 
     It 'refuse de sacrifier le minimum Hermes pour economiser la VRAM' {
@@ -286,7 +341,11 @@ Describe 'Experience utilisateur Local-Codex' {
         Test-Path -LiteralPath $nativeAgent -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $nativeMcp -PathType Leaf | Should Be $true
         ([IO.File]::ReadAllText($nativeAgent)).Contains('## Dialogue adaptatif et initiative') | Should Be $true
+        ([IO.File]::ReadAllText($nativeAgent)).Contains('local-codex-canonical-code-policy') | Should Be $true
+        ([IO.File]::ReadAllText($nativeAgent)).Contains('local-codex-project-map-policy') | Should Be $true
         ([IO.File]::ReadAllText($agents)).Contains('au maximum trois questions') | Should Be $true
+        ([IO.File]::ReadAllText($agents)).Contains('local-codex-canonical-code-policy') | Should Be $true
+        ([IO.File]::ReadAllText($agents)).Contains('local-codex-project-map-policy') | Should Be $true
         $promptContent = [IO.File]::ReadAllText($prompt)
         $healthContent = [IO.File]::ReadAllText($health)
         $promptContent.Contains("name: 'verifier-codex'") | Should Be $true

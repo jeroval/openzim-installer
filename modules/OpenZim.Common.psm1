@@ -276,6 +276,24 @@ $agentPolicyBody = @'
   compromis. Propose au plus trois améliorations pertinentes, séparées du
   périmètre demandé, sans les implémenter silencieusement.
 - Inspecte les conventions et les fichiers concernés avant toute modification.
+<!-- local-codex-canonical-code-policy -->
+<!-- local-codex-project-map-policy -->
+- Avant toute modification, inventorie l'arborescence utile sans charger les
+  dépendances, builds, caches ou données volumineuses. Lis les règles, manifestes,
+  points d'entrée et tests, puis établis une carte concise des modules et
+  dépendances concernés dans la conversation, sans créer de fichier de rapport.
+- Pour une correction locale, inspecte la cible, ses appelants, ses dépendances
+  directes et ses tests. Avant de créer, déplacer, renommer ou supprimer un
+  fichier, recherche son rôle, ses équivalents et toutes ses références.
+- Une demande de revue, correction, amélioration ou refactorisation modifie
+  l'implémentation canonique en place. Avant de créer un fichier, recherche les
+  fichiers de même rôle et le point d'entrée existant.
+- Ne crée pas de variante `improved`, `new`, `v2`, `final`, `fixed`, `copy` ou
+  `backup`, ni d'application parallèle, sauf demande explicite. Utilise Git
+  pour l'historique. Si la version canonique est ambiguë, demande laquelle garder.
+- Ne crée un fichier que pour une responsabilité distincte, relie-le à
+  l'implémentation existante et justifie sa création. Vérifie les références
+  locales, la syntaxe et les tests, puis signale les fichiers orphelins.
 - Consulte OpenZIM lorsqu'une API, une syntaxe ou une technologie est incertaine.
 - Réponds en français par défaut et traduis en français les explications issues
   de documents anglais, sans traduire le code ni les identifiants techniques.
