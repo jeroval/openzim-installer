@@ -2,6 +2,24 @@
 Set-StrictMode -Version Latest
 foreach ($module in @('LocalCodex.Common','Models','Hermes','OpenZim','Hardware')) { Import-Module (Join-Path $PSScriptRoot "$module.psm1") }
 
+function Test-LocalCodexNativeAgentContent {
+    param([AllowEmptyString()][string] $Content)
+
+    $toolsLine = [regex]::Match($Content, '(?m)^tools:\s*\[(?<tools>[^\r\n]*)\]\s*$')
+    if (-not $toolsLine.Success) { return $false }
+
+    $tools = @($toolsLine.Groups['tools'].Value -split ',' | ForEach-Object {
+        ([string] $_).Trim().Trim([char[]]@([char] 39, [char] 34))
+    })
+    return (
+        $Content -match '(?m)^name:\s*Local-Codex Native\s*$' -and
+        'execute' -in $tools -and
+        'openzim/*' -in $tools -and
+        $Content -match 'local-codex-canonical-code-policy' -and
+        $Content -match 'local-codex-project-map-policy'
+    )
+}
+
 function Get-LocalCodexComponentInventory {
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory,
         [string] $ProjectDirectory)
@@ -132,10 +150,7 @@ function Get-LocalCodexDoctor {
             $candidate = Read-LocalCodexJson $candidatePath
             $nativeAgentPath = Join-Path $ProjectDirectory '.github\agents\local-codex-native.agent.md'
             $nativeAgent = [IO.File]::ReadAllText($nativeAgentPath)
-            if ($nativeAgent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
-                $nativeAgent -notmatch 'openzim/\*' -or $nativeAgent -notmatch "'execute'" -or
-                $nativeAgent -notmatch 'local-codex-canonical-code-policy' -or
-                $nativeAgent -notmatch 'local-codex-project-map-policy') {
+            if (-not (Test-LocalCodexNativeAgentContent $nativeAgent)) {
                 throw 'Agent natif Local-Codex absent ou incomplet.'
             }
             $nativeMcp = Read-LocalCodexJson (Join-Path $ProjectDirectory '.vscode\mcp.json')
@@ -175,4 +190,4 @@ function Get-LocalCodexDoctor {
     }
 }
 
-Export-ModuleMember -Function Get-LocalCodexDoctor,Get-LocalCodexComponentInventory
+Export-ModuleMember -Function Get-LocalCodexDoctor,Get-LocalCodexComponentInventory,Test-LocalCodexNativeAgentContent

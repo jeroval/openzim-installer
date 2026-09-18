@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
@@ -53,6 +54,20 @@ class CertificationTests(unittest.TestCase):
     def test_web_tool_is_reported_as_external_network(self):
         tools = [{'tool_name': 'web_search', 'content': 'external result'}]
         self.assertFalse(certify.has_no_external_network(tools))
+
+    def test_certification_home_blocks_external_toolsets_without_changing_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'source'
+            workspace = root / 'workspace'
+            source.mkdir()
+            workspace.mkdir()
+            original = {'agent': {'disabled_toolsets': ['connections']}, 'model': {'default': 'fixture'}}
+            (source / 'config.yaml').write_text(json.dumps(original), encoding='utf-8')
+            generated = Path(certify.prepare_certification_home(source, workspace))
+            result = json.loads((generated / 'config.yaml').read_text(encoding='utf-8'))
+            self.assertEqual(result['agent']['disabled_toolsets'], ['connections', 'web', 'browser'])
+            self.assertEqual(json.loads((source / 'config.yaml').read_text(encoding='utf-8')), original)
 
     def test_diagnosis_requires_both_file_names(self):
         complete = ('calculator.py subtracts instead of adding; replace subtraction with addition. '

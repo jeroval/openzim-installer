@@ -40,6 +40,28 @@ def has_no_external_network(tool_rows):
                    for row in tool_rows)
 
 
+def prepare_certification_home(source_home, workspace):
+    """Isole le scenario et retire techniquement les outils reseau externes.
+
+    Une consigne textuelle seule ne suffit pas avec tous les modeles locaux :
+    le profil de certification applique donc aussi la denylist native Hermes.
+    Le profil utilisateur d'origine reste strictement inchange.
+    """
+    source_config = Path(source_home) / 'config.yaml'
+    config = json.loads(source_config.read_text(encoding='utf-8-sig'))
+    agent = config.setdefault('agent', {})
+    disabled = agent.get('disabled_toolsets') or []
+    if isinstance(disabled, str):
+        disabled = [name.strip() for name in disabled.split(',') if name.strip()]
+    agent['disabled_toolsets'] = list(dict.fromkeys([*disabled, 'web', 'browser']))
+    certification_home = workspace / '.hermes-certification'
+    certification_home.mkdir()
+    (certification_home / 'config.yaml').write_text(
+        json.dumps(config, indent=2), encoding='utf-8'
+    )
+    return str(certification_home)
+
+
 def has_two_file_diagnosis(text):
     """Le diagnostic doit nommer les deux modules avant toute modification."""
     normalized = (text or '').lower()
@@ -84,6 +106,7 @@ def has_successful_file_read(tool_rows, call_arguments):
 class AcpClient:
     def __init__(self, executable, home, workspace, timeout):
         self.workspace = workspace.resolve()
+        self.allow_edits = False
         self.deadline = time.monotonic() + timeout
         self.events = []
         self.inbox = queue.Queue()
@@ -127,7 +150,7 @@ class AcpClient:
                 if message["method"] == "session/request_permission":
                     call = message.get("params", {}).get("toolCall", {})
                     diffs = [item for item in call.get("content", []) if item.get("type") == "diff"]
-                    allowed = call.get("kind") == "edit" and bool(diffs)
+                    allowed = self.allow_edits and call.get("kind") == "edit" and bool(diffs)
                     for diff in diffs:
                         target = Path(diff.get("path", ""))
                         if not target.is_absolute():
@@ -182,9 +205,10 @@ def fixture(workspace):
 def run(executable, home, workspace, timeout):
     workspace.mkdir(parents=True, exist_ok=False)
     original = fixture(workspace)
+    certification_home = prepare_certification_home(home, workspace)
     initial = subprocess.run([sys.executable, "-m", "unittest", "-v"], cwd=workspace,
                              capture_output=True, text=True, timeout=30)
-    client = AcpClient(executable, home, workspace, timeout)
+    client = AcpClient(executable, certification_home, workspace, timeout)
     report = {"status": "FAIL", "workspace": str(workspace), "checks": {}, "error": None}
     session = {}
     diagnosed_before_edit = False
@@ -213,6 +237,7 @@ def run(executable, home, workspace, timeout):
         diagnosed_before_edit = all((workspace / name).read_text(encoding="utf-8") == original[name]
                                    for name in ("calculator.py", "shipping.py")) and \
             has_two_file_diagnosis(diagnosis_messages)
+        client.allow_edits = True
         prompt("Now fix BOTH calculator.py and shipping.py with the patch tool. Do not change test_app.py. "
                "Then use the terminal tool (not execute_code) to execute the given Python executable "
                "with -m py_compile calculator.py shipping.py and then -m unittest -v. "
@@ -236,7 +261,7 @@ def run(executable, home, workspace, timeout):
         try:
             # Lecture seule de la session creee par ce test. Hermes reste le seul
             # proprietaire de sa memoire ; aucun second historique n'est importe.
-            database = (Path(home) / "state.db").resolve().as_uri() + "?mode=ro"
+            database = (Path(certification_home) / "state.db").resolve().as_uri() + "?mode=ro"
             with sqlite3.connect(database, uri=True) as connection:
                 connection.row_factory = sqlite3.Row
                 evidence = [dict(row) for row in connection.execute(

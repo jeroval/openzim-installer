@@ -184,8 +184,14 @@ Add-HealthCheck 'NativeChat' {
     }
     $agentPath = Join-Path $projectDirectory '.github\agents\local-codex-native.agent.md'
     $agentContent = Get-Content -LiteralPath $agentPath -Raw -Encoding UTF8
+    $toolsLine = [regex]::Match($agentContent, '(?m)^tools:\s*\[(?<tools>[^\r\n]*)\]\s*$')
+    $nativeTools = if ($toolsLine.Success) {
+        @($toolsLine.Groups['tools'].Value -split ',' | ForEach-Object {
+            ([string] $_).Trim().Trim([char[]]@([char] 39, [char] 34))
+        })
+    } else { @() }
     if ($agentContent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
-        $agentContent -notmatch "openzim/\*" -or $agentContent -notmatch "'execute'" -or
+        'openzim/*' -notin $nativeTools -or 'execute' -notin $nativeTools -or
         $agentContent -notmatch '## Dialogue adaptatif et initiative' -or
         $agentContent -notmatch 'local-codex-canonical-code-policy' -or
         $agentContent -notmatch 'local-codex-project-map-policy') {

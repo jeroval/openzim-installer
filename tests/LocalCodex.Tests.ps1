@@ -307,6 +307,17 @@ Describe 'Hermes configuration offline' {
 }
 
 Describe 'Experience utilisateur Local-Codex' {
+    It 'accepte les outils du custom agent avec ou sans guillemets YAML' {
+        $body = @'
+name: Local-Codex Native
+<!-- local-codex-canonical-code-policy -->
+<!-- local-codex-project-map-policy -->
+'@
+        Test-LocalCodexNativeAgentContent ("tools: ['read', 'execute', 'openzim/*']`n" + $body) | Should Be $true
+        Test-LocalCodexNativeAgentContent ("tools: [vscode, execute, read, 'openzim/*', todo]`n" + $body) | Should Be $true
+        Test-LocalCodexNativeAgentContent ("tools: [read, 'openzim/*']`n" + $body) | Should Be $false
+    }
+
     It 'distingue clairement le contexte configure du minimum Hermes' {
         Format-LocalCodexContext 131072 | Should Be '128K (131072 tokens)'
         Format-LocalCodexContext 64000 | Should Be '64000 tokens'
