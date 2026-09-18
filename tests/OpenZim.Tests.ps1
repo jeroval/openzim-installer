@@ -310,11 +310,15 @@ ancien diagnostic gere
             throw 'Le prompt de verification Local-Codex est incomplet ou duplique.'
         }
         $nativeAgent = [IO.File]::ReadAllText($nativeAgentPath)
+        $nativeAgentMarkerCount = [regex]::Matches(
+            $nativeAgent,
+            '<!-- local-codex-native-agent:begin -->'
+        ).Count
         if ($nativeAgent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
             -not $nativeAgent.Contains("tools: ['read', 'search', 'edit', 'execute', 'openzim/*']") -or
             -not $nativeAgent.Contains('## Dialogue adaptatif et initiative') -or
             -not $nativeAgent.Contains('au maximum trois questions') -or
-            [regex]::Matches($nativeAgent, '<!-- local-codex-native-agent:begin -->').Count -ne 1) {
+            $nativeAgentMarkerCount -ne 1) {
             throw 'Le custom agent natif est incomplet ou duplique.'
         }
 
