@@ -174,7 +174,7 @@ function Set-OpenZimProjectInstructions {
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     $standardsTemplatePath = Join-Path $repositoryRoot 'templates\Development-Standards.instructions.md'
     $startupPromptTemplatePath = Join-Path $repositoryRoot 'templates\Verify-OpenZim.prompt.md'
-    $guideSourcePath = Join-Path $repositoryRoot 'docs\Guide-Bonnes-Pratiques-Code.md'
+    $guideSourcePath = Join-Path $repositoryRoot 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
     foreach ($requiredFile in @($standardsTemplatePath, $startupPromptTemplatePath, $guideSourcePath)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             throw "Modele d instructions introuvable : $requiredFile"
@@ -202,7 +202,12 @@ function Set-OpenZimProjectInstructions {
     }
     $startupPromptFrontMatter = $startupPromptMatch.Groups[1].Value
     $startupPromptBody = $startupPromptMatch.Groups[2].Value
-    $guideBody = [IO.File]::ReadAllText($guideSourcePath)
+    $guideSource = [IO.File]::ReadAllText($guideSourcePath)
+    $guideMatch = [regex]::Match(
+        $guideSource,
+        '(?s)<!-- openzim-guide:begin -->\s*(.*?)\s*<!-- openzim-guide:end -->'
+    )
+    $guideBody = if ($guideMatch.Success) { $guideMatch.Groups[1].Value } else { $guideSource }
 
     $copilotBody = @'
 ## Documentation locale OpenZIM

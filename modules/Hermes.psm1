@@ -28,13 +28,17 @@ function Install-LocalCodexHermes {
     $git = (Get-Command git.exe -ErrorAction Stop).Source
     $uv = (Get-Command uv.exe -ErrorAction Stop).Source
     if (-not $PSCmdlet.ShouldProcess($paths.Root, 'Installer Hermes et ACP a la revision epinglee')) { return }
+    Write-Host "      Dossier Hermes : $($paths.Root)" -ForegroundColor DarkGray
+    Write-Host "      Revision        : $($Settings.hermes.revision)" -ForegroundColor DarkGray
     [IO.Directory]::CreateDirectory($paths.Root) | Out-Null
     if (-not (Test-Path -LiteralPath (Join-Path $paths.Root '.git'))) {
+        Write-Host '      [INFO] Preparation du depot Hermes epingle' -ForegroundColor Cyan
         Invoke-LocalCodexProcess $git @('init', $paths.Root) | Out-Null
         Invoke-LocalCodexProcess $git @('-C', $paths.Root, 'config', 'core.longpaths', 'true') | Out-Null
         Invoke-LocalCodexProcess $git @('-C', $paths.Root, 'remote', 'add', 'origin', 'https://github.com/NousResearch/hermes-agent.git') | Out-Null
     }
     if (-not (Test-Path -LiteralPath (Join-Path $paths.Root 'pyproject.toml'))) {
+        Write-Host '      [INFO] Telechargement des sources Hermes' -ForegroundColor Cyan
         Invoke-LocalCodexProcess $git @('-C', $paths.Root, 'fetch', '--depth', '1', 'origin', $Settings.hermes.revision) -TimeoutSeconds 600 | Out-Null
         Invoke-LocalCodexProcess $git @('-C', $paths.Root, 'checkout', '--detach', $Settings.hermes.revision) | Out-Null
     }
@@ -45,18 +49,23 @@ function Install-LocalCodexHermes {
         try {
             Invoke-LocalCodexProcess $paths.Python @('-c', 'import acp, mcp') | Out-Null
             Invoke-LocalCodexProcess $paths.Executable @('acp', '--check') -Environment @{ HERMES_HOME = $paths.Home } | Out-Null
+            Write-Host "      [OK] Hermes deja installe et valide : $($paths.Executable)" -ForegroundColor Green
             return $paths
         }
         catch { Write-Warning "Installation Hermes incomplete : $($_.Exception.Message)" }
     }
+    Write-Host "      [INFO] Creation de l environnement Python Hermes $($Settings.hermes.pythonVersion)" -ForegroundColor Cyan
+    Write-Host '             Cette etape peut prendre plusieurs minutes au premier lancement.' -ForegroundColor DarkGray
     Invoke-LocalCodexProcess $uv @('sync', '--frozen', '--no-dev', '--extra', 'acp', '--extra', 'mcp', '--python', $Settings.hermes.pythonVersion) -WorkingDirectory $paths.Root -TimeoutSeconds 1800 | Out-Null
     Invoke-LocalCodexProcess $paths.Executable @('acp', '--check') -Environment @{ HERMES_HOME = $paths.Home } | Out-Null
+    Write-Host "      [OK] Hermes installe et ACP valide : $($paths.Executable)" -ForegroundColor Green
     return $paths
 }
 
 function New-LocalCodexHermesConfiguration {
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)] $Candidate, [Parameter(Mandatory)] $McpServer)
     if (-not $McpServer.command -or @($McpServer.args).Count -eq 0) { throw 'Configuration OpenZIM incomplete.' }
+    Assert-LocalCodexAgentContext ([long] $Candidate.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
     # JSON est un sous-ensemble YAML : pas de nouveau parseur ni fusion YAML destructive.
     [ordered]@{
         model = [ordered]@{
@@ -110,7 +119,6 @@ function Set-LocalCodexVSCode {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory,
         [Parameter(Mandatory)][string] $ProjectDirectory)
-    $paths = Get-LocalCodexHermesPaths $Settings $StateDirectory
     $project = (Resolve-Path -LiteralPath $ProjectDirectory -ErrorAction Stop).Path
     $path = Join-Path $project '.vscode\settings.json'
     $value = if (Test-Path -LiteralPath $path) { Read-LocalCodexJson $path } else { [pscustomobject]@{} }
@@ -121,11 +129,12 @@ function Set-LocalCodexVSCode {
         command = Join-Path $PSHOME 'powershell.exe'
         args = @('-NoLogo','-NoProfile','-ExecutionPolicy','Bypass','-File',$launcher,'-StateDirectory',$StateDirectory)
     }
-    $current = $value.'acp.agents'.PSObject.Properties['Local-Codex']
+    $agentName = [string] $Settings.integration.agentName
+    $current = $value.'acp.agents'.PSObject.Properties[$agentName]
     if ($null -ne $current -and ($current.Value | ConvertTo-Json -Depth 10 -Compress) -ne ($agent | ConvertTo-Json -Depth 10 -Compress)) {
         throw 'Agent ACP Local-Codex deja configure differemment ; configuration preservee.'
     }
-    $value.'acp.agents' | Add-Member NoteProperty 'Local-Codex' $agent -Force
+    $value.'acp.agents' | Add-Member NoteProperty $agentName $agent -Force
     if ($PSCmdlet.ShouldProcess($path, 'Ajouter Hermes au client ACP de VS Code')) { Write-LocalCodexJson $path $value }
 }
 

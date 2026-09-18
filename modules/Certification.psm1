@@ -2,6 +2,22 @@
 Set-StrictMode -Version Latest
 foreach ($module in @('LocalCodex.Common','Doctor','Benchmark','Hermes')) { Import-Module (Join-Path $PSScriptRoot "$module.psm1") }
 
+function Get-LocalCodexAgentEvidenceLabel {
+    param([Parameter(Mandatory)][string] $Name)
+    $labels = @{
+        acp = 'connexion ACP etablie'; streaming = 'evenements ACP recus'; toolActivity = 'activite des outils visible'
+        permissionRequest = 'demande d autorisation recue'; diffPresentation = 'modification de fichier presentee'
+        search = 'recherche de fichiers executee'; read = 'lecture de fichiers executee'; plan = 'plan de correction explique'
+        diagnosis = 'causes des defauts expliquees'; multiFileEdit = 'deux fichiers corriges'; patch = 'outil de modification utilise'
+        terminal = 'commandes de test executees'; observedFailure = 'echec initial observe'; retest = 'tests relances apres correction'
+        build = 'verification de syntaxe executee'; testsPreserved = 'tests existants preserves'; openzimCall = 'outil OpenZIM appele'
+        documentationRetrieval = 'documentation locale retrouvee'; completed = 'scenario mene a son terme'
+        noNetworkOrDelegation = 'aucun reseau ni delegation utilise'
+    }
+    if ($labels.ContainsKey($Name)) { return $labels[$Name] }
+    return "preuve $Name"
+}
+
 function Invoke-LocalCodexCertification {
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory,
         [Parameter(Mandatory)][string] $ProjectDirectory)
@@ -32,9 +48,27 @@ function Invoke-LocalCodexCertification {
             ) -TimeoutSeconds ([int] $Settings.certification.timeoutSeconds + 90)
             $scenario = $output.Output | ConvertFrom-Json
             foreach ($property in $scenario.checks.PSObject.Properties) {
-                $checks += [pscustomobject]@{ name = 'Agent.' + $property.Name; status = if ($property.Value -eq $true) { 'PASS' } else { 'FAIL' }; detail = $workspace }
+                $passed = $property.Value -eq $true
+                $label = Get-LocalCodexAgentEvidenceLabel $property.Name
+                $detail = if ($passed) {
+                    "Valide : $label. Preuves : $workspace"
+                }
+                else {
+                    "Non observe : $label. Consultez session-evidence.json dans $workspace"
+                }
+                $checks += [pscustomobject]@{ name = 'Agent.' + $property.Name; status = if ($passed) { 'PASS' } else { 'FAIL' }; detail = $detail }
             }
-            $checks += [pscustomobject]@{ name = 'AgentScenario'; status = $scenario.status; detail = [string] $scenario.error }
+            $scenarioDetail = [string] $scenario.error
+            if ([string]::IsNullOrWhiteSpace($scenarioDetail)) {
+                $failedEvidence = @($scenario.checks.PSObject.Properties | Where-Object Value -NE $true)
+                $testSummary = if ([string] $scenario.finalTests -match 'FAILED \(failures=(\d+)\)') {
+                    "$($Matches[1]) test(s) encore en echec"
+                } elseif ([string] $scenario.finalTests -match '(?m)^OK\s*$') {
+                    'tests finaux reussis'
+                } else { 'resultat final des tests non confirme' }
+                $scenarioDetail = "$($failedEvidence.Count) preuve(s) manquante(s), $testSummary. Dossier : $workspace"
+            }
+            $checks += [pscustomobject]@{ name = 'AgentScenario'; status = $scenario.status; detail = $scenarioDetail }
         }
         catch { $checks += [pscustomobject]@{ name = 'AgentScenario'; status = 'FAIL'; detail = $_.Exception.Message } }
     }
@@ -48,4 +82,4 @@ function Invoke-LocalCodexCertification {
     return $report
 }
 
-Export-ModuleMember -Function Invoke-LocalCodexCertification
+Export-ModuleMember -Function Invoke-LocalCodexCertification,Get-LocalCodexAgentEvidenceLabel

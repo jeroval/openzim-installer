@@ -30,7 +30,7 @@ param(
     [string] $ConfigPath,
 
     [Parameter()]
-    [string] $TaskName = 'Local AI - Update Kiwix ZIM Library',
+    [string] $TaskName = 'Local-Codex - Mise a jour documentation ZIM',
 
     [Parameter()]
     [string] $LibraryRoot = 'C:\AI\Knowledge\ZIM',
@@ -52,8 +52,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
+$legacyTaskName = 'Local AI - Update Kiwix ZIM Library'
 if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
-    $ConfigPath = Join-Path $repositoryRoot 'config\OpenZim.Settings.json'
+    $ConfigPath = Join-Path $repositoryRoot 'config\Knowledge.Settings.json'
 }
 
 $managerPath = Join-Path $PSScriptRoot 'Invoke-ZimLibrary.ps1'
@@ -66,19 +67,29 @@ function Get-OpenZimScheduledTask {
     # Get-ScheduledTask accepte des motifs. Le filtre exact evite de manipuler
     # accidentellement une autre tache dont le nom serait proche.
     $script:TaskReadError = $null
-    try {
-        return Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop |
-            Where-Object TaskName -EQ $TaskName |
-            Select-Object -First 1
+    $names = @($TaskName)
+    if ($TaskName -eq 'Local-Codex - Mise a jour documentation ZIM') {
+        # Compatibilite de migration : une ancienne tache reste gerable et sera
+        # remplacee par le nouveau nom lors de la prochaine action Create.
+        $names += $legacyTaskName
     }
-    catch {
-        if ($_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*' -or
-            $_.Exception.Message -match 'No MSFT_ScheduledTask|introuvable|not found') {
+    foreach ($name in $names) {
+        try {
+            $task = Get-ScheduledTask -TaskName $name -ErrorAction Stop |
+                Where-Object TaskName -EQ $name |
+                Select-Object -First 1
+            if ($null -ne $task) { return $task }
+        }
+        catch {
+            if ($_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*' -or
+                $_.Exception.Message -match 'No MSFT_ScheduledTask|introuvable|not found') {
+                continue
+            }
+            $script:TaskReadError = $_.Exception.Message
             return $null
         }
-        $script:TaskReadError = $_.Exception.Message
-        return $null
     }
+    return $null
 }
 
 function Show-OpenZimScheduledTask {
@@ -136,10 +147,10 @@ switch ($Action) {
         if ($null -eq $existingTask) {
             throw "La tache '$TaskName' n existe pas. Creez-la avant de la tester."
         }
-        if ($PSCmdlet.ShouldProcess($TaskName, 'Lancer maintenant la vraie mise a jour ZIM')) {
+        if ($PSCmdlet.ShouldProcess($existingTask.TaskName, 'Lancer maintenant la vraie mise a jour ZIM')) {
             Start-ScheduledTask -InputObject $existingTask
             Start-Sleep -Seconds 1
-            Write-Host "Tache lancee : $TaskName" -ForegroundColor Green
+            Write-Host "Tache lancee : $($existingTask.TaskName)" -ForegroundColor Green
             Write-Host 'Elle s execute en arriere-plan et peut durer longtemps selon le catalogue et les telechargements.'
             Write-Host 'Revenez dans Etat / dernier resultat apres sa fin pour connaitre le code final.'
             Show-OpenZimScheduledTask -Task (Get-OpenZimScheduledTask)
@@ -154,9 +165,9 @@ switch ($Action) {
             Write-Host "Aucune tache a supprimer : $TaskName" -ForegroundColor Yellow
             return
         }
-        if ($PSCmdlet.ShouldProcess($TaskName, 'Supprimer la tache planifiee')) {
+        if ($PSCmdlet.ShouldProcess($existingTask.TaskName, 'Supprimer la tache planifiee')) {
             Unregister-ScheduledTask -InputObject $existingTask -Confirm:$false
-            Write-Host "Tache supprimee : $TaskName" -ForegroundColor Green
+            Write-Host "Tache supprimee : $($existingTask.TaskName)" -ForegroundColor Green
             Write-Host 'Les archives ZIM et les fichiers de configuration ont ete conserves.'
         }
         return
@@ -193,6 +204,12 @@ if ($PSCmdlet.ShouldProcess($TaskName, 'Enregistrer la tache planifiee')) {
         -Settings $settings `
         -Description 'Verifie le catalogue Kiwix et telecharge les nouvelles archives ZIM.' `
         -Force | Out-Null
+
+    if ($null -ne $existingTask -and $existingTask.TaskName -eq $legacyTaskName -and
+        $existingTask.TaskName -ne $TaskName) {
+        Unregister-ScheduledTask -InputObject $existingTask -Confirm:$false
+        Write-Host "Ancienne tache migree : $legacyTaskName" -ForegroundColor DarkGray
+    }
 
     Write-Host "Tache enregistree : $TaskName" -ForegroundColor Green
     Write-Host "Frequence         : chaque $DayOfWeek a $($At.ToString('HH:mm'))"

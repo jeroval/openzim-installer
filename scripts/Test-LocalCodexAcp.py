@@ -189,11 +189,22 @@ def run(executable, home, workspace, timeout):
     successful = [row for row in tools if not tool_payload(row).get('error') and
                   not tool_payload(row).get('is_error') and tool_payload(row).get('exit_code', 0) == 0]
     names = {row['tool_name'] for row in successful}
+    permission_events = [event for event in client.events
+                         if event.get("method") == "session/request_permission"]
+    diff_events = [item for event in permission_events
+                   for item in event.get("params", {}).get("toolCall", {}).get("content", [])
+                   if item.get("type") == "diff"]
+    session_updates = [event.get("params", {}).get("update", {}).get("sessionUpdate")
+                       for event in client.events if event.get("method") == "session/update"]
     terminals = [row for row in successful if row['tool_name'] == 'terminal' and
                  tool_payload(row).get('exit_code') == 0]
     documentation = [row for row in successful if row['tool_name'] == 'mcp__openzim__openzim_search_archive']
     checks = {
         "acp": report.get("agentInfo", {}).get("name") == "hermes-agent",
+        "streaming": "agent_message_chunk" in session_updates,
+        "toolActivity": any(update in ("tool_call", "tool_call_update") for update in session_updates),
+        "permissionRequest": bool(permission_events),
+        "diffPresentation": bool(diff_events),
         "search": 'search_files' in names, "read": 'read_file' in names,
         "plan": diagnosed_before_edit,
         "diagnosis": diagnosed_before_edit and 'calculator' in first_messages and 'shipping' in first_messages,

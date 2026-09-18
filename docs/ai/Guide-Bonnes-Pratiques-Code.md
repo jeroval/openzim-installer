@@ -1,8 +1,8 @@
 <!-- openzim-guide:begin -->
 # Référentiel de développement pour les agents IA locaux
 
-Ce guide définit le socle commun à appliquer aux projets assistés par GPT-OSS,
-Qwen ou un autre agent de développement. Il est volontairement indépendant du
+Ce guide définit le socle commun à appliquer aux projets assistés par
+Local-Codex, Qwen ou un autre agent de développement. Il est volontairement indépendant du
 langage. Les conventions natives du langage et les règles explicites du projet
 restent prioritaires lorsqu'elles sont plus précises.
 
@@ -237,10 +237,25 @@ L'agent doit :
 8. expliquer toute dérogation au présent guide ;
 9. terminer par un résumé des changements et validations.
 
+## 16. Architecture, évolution et expérience
+
+- séparer présentation, cas d'usage et adaptateurs externes ;
+- orienter les dépendances vers les décisions stables du produit ;
+- centraliser chaque connaissance susceptible de changer ;
+- préférer des composants remplaçables et testables indépendamment ;
+- concevoir explicitement migration, compatibilité et rollback ;
+- optimiser l'opérabilité : diagnostic clair, reprise et réparation ;
+- rechercher la simplicité et l'évolutivité plutôt que la généralité abstraite ;
+- livrer de petits parcours verticaux testables avant d'étendre la solution ;
+- équilibrer désirabilité utilisateur, faisabilité technique et viabilité ;
+- utiliser prototypes et retours réels pour corriger le parcours utilisateur.
+
 ## Origine et adaptation
 
-Ce référentiel est une synthèse adaptée des deux documents fournis par
-l'utilisateur. Certaines formulations trop absolues ont été rendues
+Ce référentiel est une synthèse adaptée des documents fournis par
+l'utilisateur sur l'architecture, la construction logicielle, l'évolutivité,
+l'ingénierie à long terme, le pragmatisme et le design centré utilisateur.
+Certaines formulations trop absolues ont été rendues
 contextuelles : les variables sont déclarées près de leur usage, les tests sont
 orientés risque, les dépendances ne sont pas installées sans consentement et les
 conventions natives du langage restent prioritaires.

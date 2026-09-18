@@ -22,8 +22,8 @@ sous-dossiers.
 Configure automatiquement le projet indique par `ProjectDirectory`.
 
 .PARAMETER Mode
-Le mode `simple` expose trois outils courts via une passerelle compatible avec
-GPT-OSS et les petits modeles locaux. Le mode `advanced` expose directement les
+Le mode `simple` expose trois outils courts via une passerelle adaptee aux
+modeles locaux compacts. Le mode `advanced` expose directement les
 outils complets d'OpenZIM MCP.
 
 .EXAMPLE
@@ -163,9 +163,9 @@ function Set-VSCodeMcpConfiguration {
     }
 
     if ($ToolMode -eq 'simple') {
-        # GPT-OSS rend parfois les champs facultatifs de zim_query comme
-        # obligatoires, puis genere des valeurs invalides. La passerelle
-        # expose des schemas courts et delegue au paquet OpenZIM officiel.
+        # Les petits modeles rendent parfois les champs facultatifs de zim_query
+        # obligatoires, puis generent des valeurs invalides. La passerelle expose
+        # des schemas courts et delegue au paquet OpenZIM officiel.
         $server = [pscustomobject]@{
             type    = 'stdio'
             command = $OpenZimPythonPath
@@ -349,7 +349,12 @@ if (-not $WhatIfPreference) {
     }
 
     Write-Step 'Verification de OpenZIM MCP'
-    Invoke-NativeCommand -FilePath $openZimPath -ArgumentList @('--help')
+    $openZimHelp = (& $openZimPath --help 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0 -or $openZimHelp -notmatch 'OpenZIM MCP') {
+        throw 'La commande openzim-mcp --help ne repond pas correctement.'
+    }
+    Write-Host "[OK] Commande OpenZIM MCP valide : $openZimPath" -ForegroundColor Green
+    Write-Host "     Environnement Python       : $openZimPythonPath" -ForegroundColor DarkGray
 
     if ($DownloadRerankerModels) {
         Write-Step 'Telechargement du modele de reranking'
@@ -383,7 +388,7 @@ if ($ConfigureVSCode) {
 
     Write-Step 'Configuration de VS Code'
     if ($Mode -eq 'simple' -and -not $WhatIfPreference) {
-        Write-Host 'Verification de la passerelle simplifiee pour GPT-OSS...' -ForegroundColor DarkCyan
+        Write-Host 'Verification de la passerelle simplifiee pour les modeles locaux...' -ForegroundColor DarkCyan
         Invoke-NativeCommand `
             -FilePath $openZimPythonPath `
             -ArgumentList (@($compatibilityServerPath, '--self-test') + $archiveDirectories)

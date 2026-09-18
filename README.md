@@ -1,315 +1,88 @@
 # Local-Codex
 
-Migration progressive vers un agent de developpement local : **VS Code / ACP →
-Hermes → Ollama / Qwen**, avec OpenZIM comme bibliotheque documentaire.
-Le nouveau parcours se lance avec `Start-LocalCodex.cmd`.
-
-```powershell
-.\Local-Codex.ps1 -Action Plan
-.\Local-Codex.ps1 -Action Install
-.\Local-Codex.ps1 -Action Doctor
-```
-
-Le profil reste candidat jusqu'a reussite de la certification. Aucun gros modele
-ni ZIM n'est telecharge implicitement. Voir le [guide Local-Codex](docs/Local-Codex.md)
-pour les prerequis, commandes, mises a jour, rollback et limites, ainsi que
-[l'audit de migration](docs/Migration-LocalCodex.md).
-
-## Parcours historique OpenZIM conserve
-
-Cette boite a outils installe OpenZIM MCP, construit une bibliotheque Kiwix
-classee et configure VS Code. Les telechargements ne sont jamais lances par
-defaut.
-
-## Résultat obtenu
-
-Après le parcours guidé, vous disposez d'un assistant de développement local :
+Local-Codex installe sous Windows un agent de développement local utilisable
+dans Visual Studio Code. Une installation globale dessert tous vos projets.
+Le [cahier des besoins](docs/Cahier-des-besoins.md) définit les critères produit
+et les preuves nécessaires avant de déclarer une installation fonctionnelle.
+Les frontières entre interface, cas d’usage et intégrations sont décrites dans
+[l’architecture](docs/Architecture.md).
 
 ```text
-Question dans VS Code
-        |
-        v
-Extension de chat compatible Ollama et MCP
-        |
-        +----> Ollama exécute GPT-OSS ou Qwen sur votre ordinateur
-        |
-        +----> OpenZIM MCP recherche dans les archives Kiwix locales
+Visual Studio Code -> ACP Client -> Hermes Agent -> Ollama -> Qwen 3.5
+                              |
+                              +-> OpenZIM MCP -> archives ZIM locales
 ```
 
-Les archives restent sur votre disque et peuvent être consultées sans Internet.
-Le modèle ne lit toutefois pas directement les fichiers `.zim` : l'extension
-de chat de VS Code doit prendre en charge MCP et autoriser les appels d'outils.
+ACP est une exigence de Local-Codex, pas un mode optionnel. Il transporte entre
+VS Code et Hermes la conversation, le streaming, l'activité des outils, les
+commandes terminal, les demandes d'autorisation et les modifications de
+fichiers. Sans liaison ACP validée, Local-Codex refuse de considérer la chaîne
+comme fonctionnelle : un chatbot Ollama dans une barre latérale ne suffit pas.
 
-## Prérequis
+## Démarrage
 
-- Windows 10 ou Windows 11 en 64 bits ;
-- PowerShell 5.1 ou version ultérieure ;
-- une connexion Internet pour l'installation et les téléchargements initiaux ;
-- suffisamment d'espace disque : budget ZIM choisi, plus environ 14 Go pour
-  GPT-OSS 20B, 11 Go pour Qwen2.5-Coder 14B, 6,6 Go pour Qwen 3.5 Agent 9B
-  et 15 Go pour Devstral Small 2 24B si tous sont installés ;
-- idéalement 16 Go de mémoire vive ou plus. Le profil Qwen 3.5 Agent limite
-  automatiquement le contexte à 32K pour les GPU grand public.
-
-Les droits administrateur ne sont normalement pas nécessaires lorsque les
-dossiers proposés par défaut sont conservés.
-
-## Pour débuter : aucun JSON à modifier
-
-Double-cliquez sur **`Demarrer-OpenZim.cmd`**. Un menu en français permet de
-configurer l'usage principal, le dossier, le budget, les contenus optionnels, l'installation du
-serveur OpenZIM MCP, les téléchargements et VS Code. Les valeurs sont
-enregistrées automatiquement.
-
-L'accueil détecte également Visual Studio Code, Ollama, GPT-OSS 20B,
-Qwen2.5-Coder 14B, Qwen 3.5 Agent 9B 32K et Devstral Agent 24B sans démarrer de
-service ni télécharger de modèle. Il affiche
-un parcours en quatre étapes pour montrer ce qui est prêt et ce qui reste à faire.
-
-Avant le choix des modèles de l'option 12, l'assistant mesure automatiquement la
-RAM et la VRAM. Il classe chaque modèle comme `RECOMMANDÉ`, `POSSIBLE` ou
-`DÉCONSEILLÉ`, puis propose le choix le plus adapté. Il utilise `nvidia-smi`
-lorsque cet outil est disponible, puis les informations vidéo 64 bits du
-registre Windows et enfin WMI comme dernier recours. Aucune liste de cartes
-graphiques n'est maintenue : la décision repose sur des seuils de RAM et de VRAM
-propres aux quatre modèles proposés. La taille du
-contexte et le déchargement en RAM pouvant modifier les performances, cette
-recommandation reste indicative et l'utilisateur conserve toujours le choix.
-
-Consultez [le guide débutant](docs/Guide-Debutant.md) pour le parcours pas à pas.
-Les choix d'interface sont expliqués dans
-[les principes d'expérience utilisateur](docs/Principes-Experience-Utilisateur.md).
-
-Dans le menu, saisissez **A** à tout moment pour afficher l'explication du
-parcours complet. La ligne **Conseil** de l'accueil indique automatiquement la
-prochaine étape recommandée.
-
-## Premier lancement conseillé
-
-1. Téléchargez le dépôt GitHub puis décompressez-le dans un dossier permanent.
-2. Double-cliquez sur `Demarrer-OpenZim.cmd`.
-3. Utilisez **1 — Définir vos besoins et contraintes**, choisissez votre usage
-   principal et conservez le mode `simple` pour commencer.
-4. Utilisez **12** pour installer Ollama et au moins un modèle.
-5. Utilisez **2** pour installer OpenZIM MCP.
-6. Utilisez **3** pour examiner le panier ZIM sans téléchargement.
-7. Utilisez **4** lorsque le volume vous convient.
-8. Créez ou ouvrez votre projet dans VS Code, puis utilisez **5** en indiquant
-   son dossier racine.
-9. Utilisez **6**, rechargez la fenêtre VS Code et réalisez le test décrit dans
-   `docs/Validation-Agent-Local.md`.
-
-L'option **11 — Parcours guidé de bout en bout** regroupe ce parcours. Le plan
-ZIM sert de prototype visible et modifiable avant les téléchargements importants.
-
-L'option 5 installe aussi une charte de développement commune dans le projet :
+Double-cliquez sur `Start-LocalCodex.cmd`, puis suivez le menu :
 
 ```text
-.github/copilot-instructions.md
-.github/instructions/openzim-development-standards.instructions.md
-.github/prompts/verifier-openzim.prompt.md
-AGENTS.md
-docs/ai/Guide-Bonnes-Pratiques-Code.md
+1. Installer Local-Codex
+2. Initialiser un projet
+3. Vérifier Local-Codex
+4. Gérer la documentation locale
+5. Mettre à jour Local-Codex
+6. Paramètres
+7. Désinstaller Local-Codex
+
+Q. Quitter
 ```
 
-La version courte est appliquée automatiquement par les agents compatibles. Le
-guide complet reste disponible comme référence de conception et de revue.
-Le `.gitignore` du projet est complété par un bloc géré qui exclut uniquement
-la configuration MCP, les instructions générales choisies comme locales et les
-artefacts volumineux de la bibliothèque ZIM. Les
-standards, `AGENTS.md` et le guide restent partageables par Git.
+L’installation détecte et réutilise Git, Visual Studio Code, uv, Ollama,
+Hermes, ACP Client et OpenZIM MCP. `uv` fournit à Hermes son environnement
+Python 3.11 isolé, sans dépendre d’un éventuel Python global incompatible. Les
+composants manquants sont installés automatiquement. L’état global est placé dans
+`%LOCALAPPDATA%\Local-Codex` ; modèles, runtimes et archives ZIM ne sont jamais
+copiés dans les projets.
 
-Au début d'une nouvelle conversation, saisissez `/verifier-openzim` dans le
-chat. Ce prompt contrôle les outils simplifiés OpenZIM, inventorie les ZIM,
-lit réellement une documentation et produit un compte rendu en français. Si la
-commande n'apparaît pas, utilisez `Chat: Run Prompt` dans la palette de commandes
-et sélectionnez `verifier-openzim`.
+## Initialiser un projet
 
-En mode `simple`, l'option 5 configure automatiquement une passerelle de
-compatibilité pour les modèles locaux. Elle expose seulement trois outils aux
-schémas courts : `openzim_list_archives`, `openzim_search` et
-`openzim_search_archive`. Cette couche évite que GPT-OSS remplisse les nombreux
-paramètres facultatifs de `zim_query` avec des valeurs invalides. Le paquet
-OpenZIM MCP officiel reste responsable de toutes les recherches. Le mode
-`advanced` conserve volontairement l'accès direct aux outils complets.
+L’option 2 accepte un dossier vide, un projet existant ou un dépôt Git. Elle
+configure ACP et les instructions de l’agent. Un dépôt Git local n’est initialisé
+qu’après confirmation ; aucun dépôt distant, commit ou push n’est créé.
 
-Le dossier proposé par défaut est
-`%USERPROFILE%\OpenZIM\Knowledge\ZIM`, accessible sans droits administrateur.
+## Modèle local
 
-Les valeurs communes sont centralisees dans `config/OpenZim.Settings.json` : dossier
-de bibliotheque, catalogue, budget, marge disque, mode MCP, controles,
-tentatives reseau et retention des journaux. Un autre fichier peut etre
-selectionne avec `-ConfigPath`.
+Le catalogue est limité à Qwen 3.5 jusqu’à 9B : `0.8b`, `2b`, `4b` et
+`9b-q4_K_M`. Un seul modèle est destiné à être installé. Hermes exige au moins
+64K de contexte pour le fonctionnement agentique avec outils. Cette valeur est
+un plancher absolu : la recommandation matérielle peut choisir un modèle plus
+petit, mais ne réduit jamais le contexte sous 64K pour économiser la VRAM.
+Benchmark et certification doivent valider le profil sur chaque machine.
 
-Le profil par defaut applique un budget maximal de **50 Go**. Les archives
-sont traitees selon leur pertinence generale et leur affinite avec l'usage
-choisi (`general`, `web`, `systems`, `data-ai` ou `security`). Une archive qui ferait depasser ce
-plafond est marquee `EXCLU` dans le plan. Le panier evolue automatiquement :
-les variantes compactes sont privilegiees a 50 Go, des collections plus riches
-sont debloquees a 100 Go, et les tres grandes bases peuvent etre ajoutees a
-200 Go lorsqu'elles tiennent avec le reste. Les variantes redondantes d'une
-meme source sont mutuellement exclusives.
+## Vérification et documentation
 
-> La version actuelle de Stack Overflow anglais depasse a elle seule 100 Go.
-> Elle est donc detectee mais automatiquement exclue du profil 50 Go. Le
-> script ne telecharge jamais une ancienne edition uniquement pour contourner
-> le budget.
+La vérification contrôle le client ACP, le démarrage ACP de Hermes et la
+cohérence du contexte Ollama/Hermes (64K minimum). Elle exécute ensuite un projet temporaire cassé
+pour prouver lecture, recherche, édition, terminal, tests, correction et retest.
+Le menu Documentation installe OpenZIM MCP, planifie le panier, télécharge avec
+reprise, affiche l’inventaire et recherche les mises à jour. Sa configuration se
+trouve dans `config/Knowledge.Settings.json`. Le même menu permet de créer,
+inspecter, tester ou supprimer la tâche Windows de mise à jour hebdomadaire ; la
+suppression de cette tâche conserve toujours les archives.
 
-## Utilisation avancée en ligne de commande
+## Commandes avancées
 
 ```powershell
-# 1. Voir ce qui serait telecharge et le volume total
-.\Start-OpenZimAssistant.ps1 -Action Plan
-
-# 2. Installer uv et OpenZIM MCP
-.\Start-OpenZimAssistant.ps1 -Action Install
-
-# Installer le profil Qwen 3.5 recommande pour le code agentique (environ 6,6 Go)
-.\Start-OpenZimAssistant.ps1 -Action InstallAI -InstallQwen35Agent
-
-# 3. Telecharger les sources principales avec reprise et controle SHA-256
-.\Start-OpenZimAssistant.ps1 -Action Download
-
-# 4. Configurer MCP et les instructions IA du projet
-.\Start-OpenZimAssistant.ps1 -Action Configure -Mode simple
-
-# 5. Controler l'environnement local
-.\Start-OpenZimAssistant.ps1 -Action Test
+.\Local-Codex.ps1 -Action Install -DownloadModel
+.\Local-Codex.ps1 -Action InitializeProject -ProjectDirectory C:\Projets\Application
+.\Local-Codex.ps1 -Action Verify -ProjectDirectory C:\Projets\Application
+.\Local-Codex.ps1 -Action Verify -ProjectDirectory C:\Projets\Application -Advanced
+.\Local-Codex.ps1 -Action Settings
 ```
 
-Le modèle téléchargé est
-[`qwen3.5:9b-q4_K_M`](https://ollama.com/library/qwen3.5:9b-q4_K_M).
-L'assistant crée ensuite le profil local `qwen3.5-code-agent:9b-32k`, qui
-conserve les mêmes poids mais fixe `num_ctx` à 32768 et la température à 0,2.
+Pendant l'installation, Local-Codex affiche neuf etapes numerotees, explique le
+role de chaque composant et termine par leurs emplacements reels. L'option 3
+affiche un bilan de sante colorise avec versions, causes d'erreur, actions
+conseillees, materiel detecte et chemins d'installation. Un chemin se terminant
+par `.vscode` est automatiquement ramene a la racine du projet. L'option 6
+permet de revoir les emplacements sans relancer une installation.
 
-`-Action All` enchaine ces operations. Il peut telecharger un volume tres
-important ; toujours executer `Plan` auparavant.
-
-Pour choisir un autre plafond :
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action Plan -MaxLibrarySizeGB 150
-.\Start-OpenZimAssistant.ps1 -Action Plan -MaxLibrarySizeGB 150 -UsageProfile systems
-.\Start-OpenZimAssistant.ps1 -Action Download -MaxLibrarySizeGB 150
-```
-
-`-AllowBudgetOverflow` existe pour un choix volontaire, mais désactive la
-protection de taille.
-
-Les archives Dart et Bootstrap sont optionnelles :
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action Plan -IncludeOptional
-.\Start-OpenZimAssistant.ps1 -Action Download -IncludeOptional
-```
-
-## Actions disponibles
-
-| Action | Effet |
-|---|---|
-| `Discover` | Exporte les documentations de developpement detectees dans le catalogue OPDS |
-| `Plan` | Selectionne les versions recentes et calcule le volume |
-| `Install` | Installe/met a jour uv et OpenZIM MCP |
-| `InstallAI` | Installe Ollama s'il manque et les modeles IA explicitement choisis |
-| `Download` | Telecharge les archives manquantes et reprend les `.part` |
-| `Update` | Recherche et telecharge les nouvelles editions |
-| `Configure` | Cree ou complete `.vscode/mcp.json` et `.github/copilot-instructions.md` |
-| `Status` | Inventorie les archives locales |
-| `Test` | Controle les commandes, Ollama, les modeles et MCP |
-| `RegisterUpdate` | Cree, inspecte, teste ou supprime la verification hebdomadaire Windows |
-
-## Fiabilite et diagnostic
-
-- Un mutex Windows empeche deux executions de gerer simultanement la meme
-  bibliotheque.
-- Les evenements sont ecrits en JSON Lines dans `.logs` avec les niveaux
-  `INFO`, `WARNING` et `ERROR`.
-- Les anciens logs sont supprimes suivant `logs.retentionDays`.
-- `download-plan.json` et `zim-inventory.json` sont publies par renommage
-  atomique d'un fichier temporaire.
-- L'inventaire conserve l'URL, la date du catalogue, les tailles attendue et
-  locale, le chemin et le resultat de validation.
-- Les installateurs sont idempotents : les composants et modèles déjà présents
-  ne sont pas téléchargés une seconde fois.
-- L'accueil ne démarre pas Ollama. Si son service est arrêté, les modèles sont
-  affichés comme non vérifiables plutôt que comme absents.
-
-Executer les tests hors reseau :
-
-```powershell
-Invoke-Pester .\tests\OpenZim.Tests.ps1
-```
-
-## Mise a jour
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action Update
-```
-
-Par securite, les anciennes editions sont conservees. Pour les supprimer
-seulement apres le telechargement et la validation de la nouvelle :
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action Update -RemovePrevious
-```
-
-Enregistrer une verification hebdomadaire :
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action RegisterUpdate
-```
-
-Inspecter, tester ou supprimer la tache en ligne de commande :
-
-```powershell
-.\Start-OpenZimAssistant.ps1 -Action RegisterUpdate -ScheduledTaskOperation Status
-.\Start-OpenZimAssistant.ps1 -Action RegisterUpdate -ScheduledTaskOperation Run
-.\Start-OpenZimAssistant.ps1 -Action RegisterUpdate -ScheduledTaskOperation Remove
-```
-
-Le lancement de test est une vraie mise a jour : il peut telecharger une
-nouvelle archive. `Status` affiche l'etat Windows, la prochaine execution, le
-dernier lancement et son code de resultat. La suppression conserve tous les ZIM.
-
-Kiwix ne fournit pas encore de mise a jour differentielle des ZIM : une
-nouvelle edition doit etre telechargee entierement. La reprise concerne un
-fichier interrompu de la meme edition.
-
-## Organisation du dépôt
-
-```text
-Demarrer-OpenZim.cmd            lancement par double-clic
-Start-OpenZimAssistant.ps1      menu et orchestration
-scripts/                        installations et opérations
-modules/                        fonctions PowerShell partagées
-config/                         réglages et sources documentaires
-docs/                           guides utilisateur et conventions
-templates/                      instructions IA copiées dans chaque projet
-tests/                          tests Pester et données hors réseau
-```
-
-Les règles de nommage et les repères de commentaires sont décrits dans
-[docs/Conventions-Code.md](docs/Conventions-Code.md). Les anciens fichiers
-`openzim.ps1` et `register-zim-update-task.ps1` ne sont que des relais de
-compatibilité ; aucun nouveau code ne doit y être ajouté.
-
-## Limites de validation
-
-Le script peut verifier Ollama, les modeles, les fichiers ZIM et la
-configuration MCP. La preuve qu'un modele choisit effectivement un outil OpenZIM
-doit etre faite dans le chat VS Code : suivez les scenarios de
-`docs/Validation-Agent-Local.md`.
-
-## Ce que l'outil ne fait pas
-
-- Il n'installe pas automatiquement une extension VS Code particulière, car le
-  choix dépend du client utilisé pour connecter Ollama et MCP.
-- Il ne garantit pas qu'un modèle appellera un outil à chaque question ; les
-  instructions du projet l'y encouragent et le scénario de validation permet de
-  le vérifier.
-- Il ne peut pas réparer le parseur interne d'Ollama. GPT-OSS peut encore
-  produire un appel `apply_patch` invalide lors d'une grosse modification de
-  code. Les instructions générées imposent des chemins relatifs et des patchs
-  courts, et l'option 6 affiche un avertissement lorsqu'elle détecte GPT-OSS.
-- Il ne réduit pas artificiellement les très grandes archives : une source qui
-  dépasse le budget est exclue et expliquée dans le plan.
+Les projets, dépôts Git et archives ZIM ne sont jamais supprimés silencieusement.

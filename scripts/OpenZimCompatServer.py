@@ -1,9 +1,8 @@
-"""Passerelle MCP simplifiee pour les petits modeles locaux.
+"""Passerelle MCP OpenZIM simplifiee pour les modeles Qwen de Local-Codex.
 
-GPT-OSS 20B peut produire des appels JSON invalides lorsqu'un outil expose de
-nombreux parametres facultatifs. Cette passerelle publie trois outils aux
-schemas courts, puis delegue leur execution a l'outil ``zim_query`` officiel
-d'OpenZIM MCP. Elle ne modifie pas le paquet OpenZIM installe.
+La passerelle publie trois outils aux schemas courts, puis delegue leur
+execution a l'outil ``zim_query`` officiel d'OpenZIM MCP. Elle ne modifie pas
+le paquet OpenZIM installe.
 """
 
 from __future__ import annotations

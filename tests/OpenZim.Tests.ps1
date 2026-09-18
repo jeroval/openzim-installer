@@ -1,7 +1,6 @@
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $managerPath = Join-Path $projectRoot 'scripts\Invoke-ZimLibrary.ps1'
 $modulePath = Join-Path $projectRoot 'modules\OpenZim.Common.psm1'
-$hardwareModulePath = Join-Path $projectRoot 'modules\LocalAi.Hardware.psm1'
 $compatibilityServerPath = Join-Path $projectRoot 'scripts\OpenZimCompatServer.py'
 $catalogFixture = Join-Path $PSScriptRoot 'fixtures\catalog.xml'
 $sourcesFixture = Join-Path $PSScriptRoot 'fixtures\sources.json'
@@ -27,79 +26,10 @@ Describe 'Scripts PowerShell' {
             }
         }
     }
-
-    It 'integre Qwen 3.5 9B 32K comme profil agentique recommande' {
-        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
-        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
-        $modelfile = [IO.File]::ReadAllText((Join-Path $projectRoot 'config\Modelfile.Qwen35CodeAgent'))
-
-        if (-not $assistant.Contains('InstallQwen35Agent') -or
-            -not $assistant.Contains('Qwen 3.5 9B 32K - recommande pour le code agentique') -or
-            -not $assistant.Contains('Show-LocalAiHardwareRecommendation') -or
-            -not $assistant.Contains('-Default $recommendedChoice') -or
-            -not $installer.Contains('qwen3.5-code-agent:9b-32k') -or
-            -not $modelfile.Contains('FROM qwen3.5:9b-q4_K_M') -or
-            -not $modelfile.Contains('PARAMETER num_ctx 32768')) {
-            throw 'Le profil Qwen 3.5 agentique 32K est incomplet.'
-        }
-    }
-
-    It 'conserve Devstral Small 2 comme modele agentique optionnel exigeant' {
-        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
-        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
-        if (-not $assistant.Contains('InstallDevstralAgent') -or
-            -not $installer.Contains('devstral-small-2:24b-instruct-2512-q4_K_M')) {
-            throw 'Le choix Devstral optionnel a disparu du selecteur.'
-        }
-    }
-}
-
-Describe 'Recommandation des modeles selon le materiel' {
-    BeforeAll {
-        Import-Module $hardwareModulePath -Force
-    }
-
-    It 'recommande le profil Qwen 3.5 avec 12 Go de VRAM et 32 Go de RAM' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB 12
-        if ($result.RecommendedChoice -ne '3') {
-            throw "Choix inattendu pour 12 Go de VRAM : $($result.RecommendedChoice)"
-        }
-        if (($result.Models | Where-Object Choice -EQ '4').Status -ne 'Deconseille') {
-            throw 'Devstral devrait etre deconseille avec 12 Go de VRAM.'
-        }
-    }
-
-    It 'prefere Qwen2.5-Coder lorsque 16 Go de VRAM sont disponibles' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB 16
-        if ($result.RecommendedChoice -ne '2') {
-            throw "Choix inattendu pour 16 Go de VRAM : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'prefere Devstral sur une configuration suffisamment dimensionnee' {
-        $result = Get-LocalAiRecommendation -RamGB 64 -VramGB 24
-        if ($result.RecommendedChoice -ne '4') {
-            throw "Choix inattendu pour 24 Go de VRAM : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'reste prudent lorsque la VRAM ne peut pas etre detectee' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB $null
-        if ($result.RecommendedChoice -ne '3') {
-            throw "Le choix de repli devrait etre Qwen 3.5 : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'tolere la petite quantite de RAM reservee par Windows' {
-        $result = Get-LocalAiRecommendation -RamGB 31.1 -VramGB 12
-        if (($result.Models | Where-Object Choice -EQ '1').Status -eq 'Deconseille') {
-            throw 'Une machine vendue avec 32 Go ne devrait pas rejeter GPT-OSS pour 31,1 Go utilisables.'
-        }
-    }
 }
 
 Describe 'Passerelle MCP pour modeles locaux' {
-    It 'expose uniquement des schemas simples a GPT-OSS' {
+    It 'expose uniquement des schemas simples aux modeles Qwen locaux' {
         $bridge = [IO.File]::ReadAllText($compatibilityServerPath)
         foreach ($toolName in @(
             'openzim_list_archives',
@@ -402,7 +332,7 @@ Describe 'Premier lancement' {
         New-Item -ItemType Directory -Path $emptyLibrary -Force | Out-Null
         $statusOutput = & $managerPath `
             -Action Status `
-            -ConfigPath (Join-Path $projectRoot 'config\OpenZim.Settings.json') `
+            -ConfigPath (Join-Path $projectRoot 'config\Knowledge.Settings.json') `
             -LibraryRoot $emptyLibrary 6>&1 | Out-String
 
         if ($statusOutput -notmatch '0 archive\(s\)') {
