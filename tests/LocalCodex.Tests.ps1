@@ -10,6 +10,26 @@ Import-Module (Join-Path $root 'modules\Doctor.psm1') -Force
 Import-Module (Join-Path $root 'modules\Certification.psm1') -Force
 
 Describe 'Promotion et rollback offline' {
+    It 'actualise l empreinte du candidat actif apres reconfiguration' {
+        Mock Get-LocalCodexHermesPaths {
+            [pscustomobject]@{ Home = Join-Path $TestDrive 'active-candidate'; Executable = Join-Path $TestDrive 'hermes.exe' }
+        } -ModuleName Updates
+        $state = Join-Path $TestDrive 'candidate-refresh'
+        $profileDirectory = Join-Path $TestDrive 'active-candidate'
+        [IO.Directory]::CreateDirectory($profileDirectory) | Out-Null
+        Write-LocalCodexJson (Join-Path $profileDirectory 'config.yaml') @{ value = 'new' }
+        Write-LocalCodexJson (Join-Path $state 'candidate.json') @{
+            model='model'; contextTokens=65536; baseDigest=('a' * 64)
+        }
+        Write-LocalCodexJson (Join-Path $state 'releases.json') @{
+            schemaVersion=1; stable=$null; previous=$null
+            active=@{ status='candidate'; home=$profileDirectory; configHash='OLD' }
+            candidate=@{ status='candidate'; home=$profileDirectory; configHash='OLD' }
+        }
+        $settings = [pscustomobject]@{ hermes = [pscustomobject]@{ revision = 'a' * 40 } }
+        $result = Set-LocalCodexCandidateRelease $settings $state
+        $result.active.configHash | Should Be (Get-FileHash (Join-Path $profileDirectory 'config.yaml')).Hash
+    }
     It 'restaure le profil precedent et conserve le stable courant pour retour' {
         $state = Join-Path $TestDrive 'swap'
         $previousHome = Join-Path $state 'previous'
@@ -156,6 +176,34 @@ Describe 'Hermes configuration offline' {
         $config.model.base_url | Should Be 'http://127.0.0.1:11434/v1'
         $config.model.context_length | Should Be 65536
         $config.mcp_servers.openzim.args[1] | Should Be 'C:\ZIM'
+        $config.agent.api_max_retries | Should Be 5
+        $config.agent.empty_response_guard.enabled | Should Be $true
+        $config.agent.empty_response_guard.cost_threshold_usd | Should Be 0.25
+    }
+    It 'refuse une politique de retry non bornee' {
+        $configDirectory = Join-Path $TestDrive 'invalid-retry'
+        [IO.Directory]::CreateDirectory($configDirectory) | Out-Null
+        Copy-Item (Join-Path $root 'config\ModelCatalog.json') $configDirectory
+        Copy-Item (Join-Path $root 'config\Knowledge.Settings.json') $configDirectory
+        $configuration = Read-LocalCodexJson (Join-Path $root 'config\LocalCodex.Settings.json')
+        $configuration.hermes.apiMaxRetries = 50
+        $path = Join-Path $configDirectory 'LocalCodex.Settings.json'
+        Write-LocalCodexJson $path $configuration
+        { Get-LocalCodexConfiguration $path } | Should Throw
+    }
+    It 'applique les retries sur une ancienne configuration schema 1' {
+        $configDirectory = Join-Path $TestDrive 'legacy-retry'
+        [IO.Directory]::CreateDirectory($configDirectory) | Out-Null
+        Copy-Item (Join-Path $root 'config\ModelCatalog.json') $configDirectory
+        Copy-Item (Join-Path $root 'config\Knowledge.Settings.json') $configDirectory
+        $configuration = Read-LocalCodexJson (Join-Path $root 'config\LocalCodex.Settings.json')
+        $configuration.hermes.PSObject.Properties.Remove('apiMaxRetries')
+        $configuration.hermes.PSObject.Properties.Remove('emptyResponseGuard')
+        $path = Join-Path $configDirectory 'LocalCodex.Settings.json'
+        Write-LocalCodexJson $path $configuration
+        $migrated = Get-LocalCodexConfiguration $path
+        $migrated.hermes.apiMaxRetries | Should Be 5
+        $migrated.hermes.emptyResponseGuard | Should Be $true
     }
     It 'refuse un candidat Hermes sous 64K' {
         $candidate.contextTokens = 32768
@@ -228,7 +276,13 @@ Describe 'Experience utilisateur Local-Codex' {
         $health = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
         Test-Path -LiteralPath $prompt -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $health -PathType Leaf | Should Be $true
-        ([IO.File]::ReadAllText($prompt)).Contains("name: 'verifier-codex'") | Should Be $true
+        $promptContent = [IO.File]::ReadAllText($prompt)
+        $healthContent = [IO.File]::ReadAllText($health)
+        $promptContent.Contains("name: 'verifier-codex'") | Should Be $true
+        $promptContent.Contains("'execute/runInTerminal'") | Should Be $true
+        $promptContent.Contains('openzim_search_archive') | Should Be $true
+        $healthContent.Contains("Add-HealthCheck 'AutomaticRetry'") | Should Be $true
+        Test-Path -LiteralPath (Join-Path $project '.github\prompts\verifier-openzim.prompt.md') | Should Be $false
     }
 
     It 'inventorie les emplacements importants sans modifier la machine' {

@@ -19,8 +19,12 @@ function Set-LocalCodexCandidateRelease {
         revision = $Settings.hermes.revision; home = $paths.Home; executable = $paths.Executable
         configHash = (Get-FileHash -LiteralPath (Join-Path $paths.Home 'config.yaml')).Hash
     }
-    # Premiere installation utilisable en candidat ; un stable existant reste actif.
-    if ($null -eq $releases.active) { $releases.active = $releases.candidate }
+    # Premiere installation utilisable en candidat ; une reconfiguration du
+    # candidat actif actualise aussi son empreinte. Un stable reste immuable.
+    if ($null -eq $releases.active -or
+        ($releases.active.status -eq 'candidate' -and $releases.active.home -eq $releases.candidate.home)) {
+        $releases.active = $releases.candidate
+    }
     Write-LocalCodexJson (Join-Path $StateDirectory 'releases.json') $releases
     return $releases
 }

@@ -2,6 +2,7 @@
 name: 'verifier-codex'
 description: 'Contrôle la chaîne locale VS Code, ACP, Hermes, Ollama, Qwen et OpenZIM.'
 agent: 'agent'
+tools: ['execute/runInTerminal', 'openzim/*']
 ---
 
 # Diagnostic complet de Local-Codex
@@ -19,7 +20,8 @@ supprime aucun fichier. N’utilise ni Internet ni délégation.
    powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .local-codex/Test-LocalCodexHealth.ps1 -Json
    ```
 
-3. Analyse le JSON retourné. Ne transforme jamais un état `FAIL` en succès.
+3. Analyse tous les contrôles du JSON retourné. Ne transforme jamais un état
+   `FAIL` en succès et regroupe les erreurs dépendantes sous leur cause racine.
 4. Vérifie ensuite la connexion MCP réelle de cette conversation en appelant
    `openzim_list_archives` une fois, sans argument. N’utilise pas directement
    l’outil interne `zim_query`.
@@ -28,6 +30,8 @@ supprime aucun fichier. N’utilise ni Internet ni délégation.
    courte `What does pathlib.Path.resolve do?`.
 6. Ne déclare Local-Codex prêt que si le script retourne `PASS`, si les archives
    sont listées et si une lecture documentaire retourne réellement du contenu.
+7. Pour chaque défaut, fournis sa cause probable, la preuve observée et une
+   action corrective précise. Ne tente aucune réparation pendant ce diagnostic.
 
 Réponds exclusivement en français selon ce format :
 
@@ -38,6 +42,8 @@ BILAN LOCAL-CODEX
 - Hermes / ACP : OK ou ÉCHEC — version ou erreur exacte
 - Ollama : OK ou ÉCHEC — version
 - Modèle local : OK ou ÉCHEC — nom et contexte
+- Appels d’outils du modèle : OK ou ÉCHEC
+- Retry automatique : OK ou ÉCHEC — nombre de tentatives
 - OpenZIM MCP : OK ou ÉCHEC
 - Bibliothèque ZIM : OK ou ÉCHEC — nombre d’archives
 - Lecture documentaire réelle : OK ou ÉCHEC
@@ -56,7 +62,11 @@ SOURCE LOCALE CONSULTÉE
 - Apport : information utilisée pour confirmer la lecture
 
 CONCLUSION
-PRÊT ou NON PRÊT, suivi des actions correctives précises.
+PRÊT ou NON PRÊT.
+
+DÉFAUTS ET CORRECTIONS
+- Pour chaque erreur : composant, preuve exacte, cause racine probable et action corrective.
+- Si aucune erreur : `Aucun défaut détecté par les contrôles exécutés.`
 ```
 
 La présence d’un fichier de configuration ne suffit jamais à prouver qu’un

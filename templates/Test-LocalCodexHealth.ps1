@@ -50,7 +50,7 @@ Add-HealthCheck 'ProjectMetadata' {
 }
 
 Add-HealthCheck 'Git' {
-    $git = Get-Command git.exe -CommandType Application -ErrorAction Stop
+    $git = Find-HealthCommand @('git.exe')
     (& $git.Source --version | Out-String).Trim()
 }
 
@@ -77,6 +77,14 @@ Add-HealthCheck 'ProjectACP' {
     if ([string]::IsNullOrWhiteSpace($agentName)) { $agentName = 'Local-Codex' }
     $agent = $settings.'acp.agents'.PSObject.Properties[$agentName]
     if ($null -eq $agent) { throw "Agent ACP '$agentName' absent de .vscode/settings.json." }
+    if (-not (Test-Path -LiteralPath ([string] $agent.Value.command) -PathType Leaf)) {
+        throw "Commande de lancement ACP absente : $($agent.Value.command)"
+    }
+    $agentArguments = @($agent.Value.args)
+    if ($metadata.stateDirectory -notin $agentArguments -or
+        @($agentArguments | Where-Object { $_ -like '*Start-LocalCodexAcp.ps1' }).Count -ne 1) {
+        throw 'Arguments ACP incoherents avec ce projet ou son etat Local-Codex.'
+    }
     $locations['ProjectSettings'] = $settingsPath
     $settingsPath
 }
@@ -87,6 +95,14 @@ Add-HealthCheck 'Release' {
     $script:active = $releases.active
     if ($null -eq $active -or [string]::IsNullOrWhiteSpace([string] $active.executable)) {
         throw 'Aucun profil Local-Codex actif.'
+    }
+    $activeConfigPath = Join-Path ([string] $active.home) 'config.yaml'
+    if (-not (Test-Path -LiteralPath $activeConfigPath -PathType Leaf)) {
+        throw "Configuration du profil actif absente : $activeConfigPath"
+    }
+    if (-not [string]::IsNullOrWhiteSpace([string] $active.configHash) -and
+        (Get-FileHash -LiteralPath $activeConfigPath -Algorithm SHA256).Hash -ne $active.configHash) {
+        throw 'La configuration du profil actif a ete modifiee hors de Local-Codex.'
     }
     $locations['Hermes'] = [string] $active.executable
     $locations['HermesProfile'] = [string] $active.home
@@ -119,12 +135,40 @@ Add-HealthCheck 'Model' {
     $tags = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 30 -ErrorAction Stop
     if (([string] $active.model) -notin @($tags.models.name)) { throw "Modele actif absent d'Ollama : $($active.model)" }
     if ([long] $active.contextTokens -lt 64000) { throw "Contexte insuffisant : $($active.contextTokens) tokens." }
-    "$($active.model), contexte $($active.contextTokens)"
+    $showBody = @{ model = [string] $active.model } | ConvertTo-Json -Compress
+    $details = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/show' -Method Post `
+        -ContentType 'application/json' -Body $showBody -TimeoutSec 30 -ErrorAction Stop
+    if ('tools' -notin @($details.capabilities)) { throw 'Le modele actif ne declare pas la capacite tools.' }
+    if ([string] $details.parameters -notmatch "(?m)^num_ctx\s+$([long] $active.contextTokens)\s*$") {
+        throw "Le contexte charge par Ollama ne correspond pas aux $($active.contextTokens) tokens attendus."
+    }
+    "$($active.model), contexte $($active.contextTokens), tools disponibles"
+}
+
+Add-HealthCheck 'HermesConfiguration' {
+    $configPath = Join-Path ([string] $active.home) 'config.yaml'
+    $script:hermesConfig = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($hermesConfig.model.default -ne $active.model -or
+        [long] $hermesConfig.model.context_length -ne [long] $active.contextTokens -or
+        $hermesConfig.model.provider -ne 'custom' -or
+        $hermesConfig.model.base_url -ne 'http://127.0.0.1:11434/v1') {
+        throw 'Le profil Hermes ne correspond pas au modele Ollama actif.'
+    }
+    "Modele, fournisseur, URL Ollama et contexte coherents"
+}
+
+Add-HealthCheck 'AutomaticRetry' {
+    $retryCount = [int] $hermesConfig.agent.api_max_retries
+    if ($retryCount -lt 2 -or $retryCount -gt 10) {
+        throw "Politique de retry invalide : $retryCount tentative(s)."
+    }
+    if ($hermesConfig.agent.empty_response_guard.enabled -ne $true) {
+        throw 'Le garde-fou Hermes contre les reponses vides est desactive.'
+    }
+    "$retryCount tentatives maximum, garde-fou de reponse vide actif"
 }
 
 Add-HealthCheck 'OpenZimMCP' {
-    $configPath = Join-Path ([string] $active.home) 'config.yaml'
-    $script:hermesConfig = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $server = $hermesConfig.mcp_servers.openzim
     if ($null -eq $server -or -not (Test-Path -LiteralPath $server.command -PathType Leaf)) {
         throw 'Serveur OpenZIM absent de la configuration Hermes.'
@@ -148,12 +192,15 @@ Add-HealthCheck 'ZimLibrary' {
     $directories = @($hermesConfig.mcp_servers.openzim.args | Select-Object -Skip 1)
     $archives = @($directories | ForEach-Object {
         if (Test-Path -LiteralPath $_ -PathType Container) {
-            Get-ChildItem -LiteralPath $_ -Filter '*.zim' -File -ErrorAction Stop
+            Get-ChildItem -LiteralPath $_ -Filter '*.zim' -File -Recurse -ErrorAction Stop
         }
     } | Select-Object -ExpandProperty FullName -Unique)
     if ($archives.Count -eq 0) { throw 'Aucune archive ZIM accessible.' }
+    $emptyArchives = @($archives | Where-Object { (Get-Item -LiteralPath $_).Length -eq 0 })
+    if ($emptyArchives.Count -gt 0) { throw "$($emptyArchives.Count) archive(s) ZIM vide(s) detectee(s)." }
     $locations['ZimLibrary'] = @($directories) -join '; '
-    "$($archives.Count) archive(s) accessible(s)"
+    $totalBytes = ($archives | ForEach-Object { (Get-Item -LiteralPath $_).Length } | Measure-Object -Sum).Sum
+    "$($archives.Count) archive(s), $([Math]::Round($totalBytes / 1GB, 2)) Go accessibles"
 }
 
 $failed = @($checks | Where-Object status -EQ 'FAIL')

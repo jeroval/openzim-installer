@@ -102,6 +102,10 @@ function Get-LocalCodexDoctor {
             $config = Read-LocalCodexJson (Join-Path $paths.Home 'config.yaml')
             if ($config.model.default -ne $candidate.model -or $config.model.context_length -ne $candidate.contextTokens -or
                 $config.model.provider -ne 'custom' -or $config.model.base_url -ne ($Settings.ollama.baseUrl.TrimEnd('/') + '/v1')) { throw 'Configuration Hermes et candidat incoherents.' }
+            if ($config.agent.api_max_retries -ne $Settings.hermes.apiMaxRetries -or
+                $config.agent.empty_response_guard.enabled -ne $Settings.hermes.emptyResponseGuard) {
+                throw 'Politique de reprise automatique Hermes absente ou incoherente.'
+            }
             $vscode = Read-LocalCodexJson (Join-Path $ProjectDirectory '.vscode\settings.json')
             $launcher = Join-Path (Split-Path -Parent $PSScriptRoot) 'scripts\Start-LocalCodexAcp.ps1'
             $agentName = [string] $Settings.integration.agentName
@@ -110,7 +114,7 @@ function Get-LocalCodexDoctor {
                 $launcher -notin @($agent.Value.args) -or $StateDirectory -notin @($agent.Value.args)) {
                 throw 'Configuration ACP incoherente ou absente ; le mode chatbot seul n est pas accepte.'
             }
-            "Hermes / Ollama / ACP coherents, contexte $($candidate.contextTokens)"
+            "Hermes / Ollama / ACP coherents, contexte $($candidate.contextTokens), $($config.agent.api_max_retries) tentatives API"
         }
         OpenZimMCP = { (Test-LocalCodexOpenZim $Settings).Output.Trim() }
         ZimLibrary = {

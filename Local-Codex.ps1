@@ -110,6 +110,7 @@ if ($Action -eq 'Settings') {
     Write-Host ("  Contexte         : {0} tokens (minimum Hermes : {1})" -f $settings.model.contextTokens, $settings.hermes.minimumContextTokens)
     Write-Host ("  Ollama           : {0}" -f $settings.ollama.baseUrl)
     Write-Host ("  Revision Hermes  : {0}" -f $settings.hermes.revision)
+    Write-Host ("  Reprise auto     : {0} tentatives maximum sur erreurs transitoires" -f $settings.hermes.apiMaxRetries)
     Write-Host ("  RAM / VRAM       : {0} Go / {1} Go" -f $hardware.ramTotalGB, $hardware.vramGB)
     Write-Host ("  GPU              : {0}" -f (($hardware.gpu | ForEach-Object Name) -join '; '))
     Show-LocalCodexComponentLocations @(Get-LocalCodexComponentInventory $settings $StateDirectory $ProjectDirectory)
@@ -192,7 +193,7 @@ try {
     }
     if ($Action -in @('Install','Update','Configure')) {
         if ($Action -in @('Install','Update')) {
-            Write-LocalCodexInstallationStep 7 $installationTotalSteps 'Configuration de Hermes' 'Connexion de Hermes au profil Ollama et au serveur OpenZIM MCP.'
+            Write-LocalCodexInstallationStep 7 $installationTotalSteps 'Configuration de Hermes' 'Connexion a Ollama/OpenZIM et activation des reprises automatiques sur erreurs transitoires.'
         }
         $candidatePath = Join-Path $StateDirectory 'candidate.json'
         if (-not (Test-Path -LiteralPath $candidatePath)) { New-LocalCodexModelProfile $settings $StateDirectory | Out-Null }

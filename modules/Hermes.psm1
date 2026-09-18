@@ -68,6 +68,15 @@ function New-LocalCodexHermesConfiguration {
     Assert-LocalCodexAgentContext ([long] $Candidate.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
     # JSON est un sous-ensemble YAML : pas de nouveau parseur ni fusion YAML destructive.
     [ordered]@{
+        # Hermes reprend uniquement ses appels modele recuperables. Ce reglage
+        # ne rejoue pas le prompt ACP complet ni les outils deja executes.
+        agent = [ordered]@{
+            api_max_retries = [int] $Settings.hermes.apiMaxRetries
+            empty_response_guard = [ordered]@{
+                enabled = [bool] $Settings.hermes.emptyResponseGuard
+                cost_threshold_usd = 0.25
+            }
+        }
         model = [ordered]@{
             default = $Candidate.model; provider = 'custom'
             base_url = $Settings.ollama.baseUrl.TrimEnd('/') + '/v1'
@@ -112,6 +121,9 @@ function Set-LocalCodexHermesConfiguration {
         }
         Write-LocalCodexJson $path $value
         Write-LocalCodexJson (Join-Path $paths.Home 'managed-hermes.json') @{ sha256 = (Get-FileHash -LiteralPath $path).Hash }
+        $additionalAttempts = [int] $Settings.hermes.apiMaxRetries - 1
+        Write-Host ("      [OK] Reprise automatique Hermes : {0} tentatives maximum (1 initiale + {1} reprises)" -f
+            $Settings.hermes.apiMaxRetries, $additionalAttempts) -ForegroundColor Green
     }
 }
 

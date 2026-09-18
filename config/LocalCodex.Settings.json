@@ -12,7 +12,9 @@
   "hermes": {
     "revision": "64ea66b03d44ead9ffea48161132e5deca5d255a",
     "minimumContextTokens": 64000,
-    "pythonVersion": "3.11"
+    "pythonVersion": "3.11",
+    "apiMaxRetries": 5,
+    "emptyResponseGuard": true
   },
   "openzim": { "mode": "compatibility", "version": "3.3.3" },
   "knowledge": { "config": "Knowledge.Settings.json" },

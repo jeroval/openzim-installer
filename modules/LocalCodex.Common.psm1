@@ -45,11 +45,20 @@ function Get-LocalCodexConfiguration {
         [string]::IsNullOrWhiteSpace([string] $settings.integration.agentName)) {
         throw 'Integration invalide : ACP, son extension VS Code et le nom de l agent sont obligatoires.'
     }
+    # Migration additive du schema 1 : les anciennes configurations restent
+    # valides tout en beneficiant de la politique de reprise sure par defaut.
+    if ($null -eq $settings.hermes.PSObject.Properties['apiMaxRetries']) {
+        $settings.hermes | Add-Member NoteProperty apiMaxRetries 5
+    }
+    if ($null -eq $settings.hermes.PSObject.Properties['emptyResponseGuard']) {
+        $settings.hermes | Add-Member NoteProperty emptyResponseGuard $true
+    }
     foreach ($limit in @(
         @($settings.model.contextTokens, 64000, 4194304),
         @($settings.benchmark.repetitions, 1, 20),
         @($settings.benchmark.outputTokens, 1, 8192),
         @($settings.ollama.timeoutSeconds, 10, 3600),
+        @($settings.hermes.apiMaxRetries, 1, 10),
         @($settings.certification.timeoutSeconds, 30, 3600)
     )) {
         if ($limit[0] -isnot [int] -and $limit[0] -isnot [long]) { throw 'Parametre numerique entier requis.' }
@@ -57,7 +66,8 @@ function Get-LocalCodexConfiguration {
     }
     if (@($settings.benchmark.contexts).Count -eq 0) { throw 'Au moins un contexte benchmark est requis.' }
     foreach ($context in $settings.benchmark.contexts) {
-        if ($context -isnot [int] -or $context -lt $settings.hermes.minimumContextTokens -or $context -gt 4194304) {
+        if (($context -isnot [int] -and $context -isnot [long]) -or
+            $context -lt $settings.hermes.minimumContextTokens -or $context -gt 4194304) {
             throw 'Contexte benchmark invalide.'
         }
     }
@@ -68,6 +78,7 @@ function Get-LocalCodexConfiguration {
     Assert-LocalCodexAgentContext $settings.hermes.minimumContextTokens
     Assert-LocalCodexAgentContext $settings.model.contextTokens $settings.hermes.minimumContextTokens
     if ($settings.hermes.revision -notmatch '^[a-f0-9]{40}$') { throw 'Hermes exige une revision Git complete et epinglee.' }
+    if ($settings.hermes.emptyResponseGuard -isnot [bool]) { throw 'Le garde-fou de reponse vide Hermes doit etre un booleen.' }
     if ($settings.updates.automaticPromotion) { throw 'La promotion automatique est interdite.' }
     $configDirectory = Split-Path -Parent ([IO.Path]::GetFullPath($Path))
     $knowledgePath = [Environment]::ExpandEnvironmentVariables($settings.knowledge.config)

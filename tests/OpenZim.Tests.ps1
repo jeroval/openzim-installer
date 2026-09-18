@@ -249,6 +249,16 @@ Describe 'Instructions IA du projet' {
         [IO.File]::WriteAllText($instructionsPath, "# Regles du projet`r`n", [Text.UTF8Encoding]::new($false))
         $gitIgnorePath = Join-Path $workspace '.gitignore'
         [IO.File]::WriteAllText($gitIgnorePath, "# Regles existantes`r`n.env`r`n", [Text.UTF8Encoding]::new($false))
+        $legacyPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $legacyPromptPath)) | Out-Null
+        [IO.File]::WriteAllText($legacyPromptPath, @'
+---
+name: 'verifier-openzim'
+---
+<!-- openzim-startup-check:begin -->
+ancien diagnostic gere
+<!-- openzim-startup-check:end -->
+'@, [Text.UTF8Encoding]::new($false))
 
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
@@ -265,11 +275,10 @@ Describe 'Instructions IA du projet' {
         }
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
-        $startupPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
         $localCodexPromptPath = Join-Path $workspace '.github\prompts\verifier-codex.prompt.md'
         $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
         $agentsPath = Join-Path $workspace 'AGENTS.md'
-        foreach ($generatedPath in @($standardsPath, $startupPromptPath, $localCodexPromptPath, $guidePath, $agentsPath)) {
+        foreach ($generatedPath in @($standardsPath, $localCodexPromptPath, $guidePath, $agentsPath)) {
             if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
                 throw "Fichier de standards absent : $generatedPath"
             }
@@ -282,17 +291,15 @@ Describe 'Instructions IA du projet' {
         if (-not ([IO.File]::ReadAllText($agentsPath)).Contains('<!-- openzim-agent-policy:begin -->')) {
             throw 'La politique AGENTS.md geree est absente.'
         }
-        $startupPrompt = [IO.File]::ReadAllText($startupPromptPath)
-        if ($startupPrompt -notmatch 'name:\s*[''"]verifier-openzim[''"]' -or
-            -not $startupPrompt.Contains('openzim_list_archives') -or
-            -not $startupPrompt.Contains('openzim_search_archive') -or
-            -not $startupPrompt.Contains('exclusivement en fran')) {
-            throw 'Le prompt de verification OpenZIM est incomplet.'
+        if (Test-Path -LiteralPath $legacyPromptPath) {
+            throw 'L ancien prompt OpenZIM gere aurait du etre supprime.'
         }
         $localCodexPrompt = [IO.File]::ReadAllText($localCodexPromptPath)
         if ($localCodexPrompt -notmatch 'name:\s*[''"]verifier-codex[''"]' -or
             -not $localCodexPrompt.Contains('Test-LocalCodexHealth.ps1') -or
             -not $localCodexPrompt.Contains('openzim_list_archives') -or
+            -not $localCodexPrompt.Contains('openzim_search_archive') -or
+            -not $localCodexPrompt.Contains('Retry automatique') -or
             [regex]::Matches($localCodexPrompt, '<!-- local-codex-health-check:begin -->').Count -ne 1) {
             throw 'Le prompt de verification Local-Codex est incomplet ou duplique.'
         }
@@ -310,6 +317,15 @@ Describe 'Instructions IA du projet' {
         if ([regex]::Matches($gitIgnore, '# openzim-local:begin').Count -ne 1) {
             throw 'Le bloc Git local OpenZIM a ete duplique.'
         }
+    }
+
+    It 'conserve un ancien prompt OpenZIM personnalise' {
+        $legacyPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $legacyPromptPath)) | Out-Null
+        $custom = "---`nname: 'verifier-openzim'`n---`n# Contenu personnalise sans marqueurs geres`n"
+        [IO.File]::WriteAllText($legacyPromptPath, $custom, [Text.UTF8Encoding]::new($false))
+        Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
+        [IO.File]::ReadAllText($legacyPromptPath) | Should Be $custom
     }
 
     It 'refuse un marqueur incomplet sans modifier le fichier' {

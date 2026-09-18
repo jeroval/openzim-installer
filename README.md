@@ -68,6 +68,17 @@ trouve dans `config/Knowledge.Settings.json`. Le même menu permet de créer,
 inspecter, tester ou supprimer la tâche Windows de mise à jour hebdomadaire ; la
 suppression de cette tâche conserve toujours les archives.
 
+## Reprise automatique des erreurs IA
+
+Hermes effectue jusqu'a cinq tentatives pour les appels au modele qui echouent
+a cause d'une coupure, d'un delai depasse, d'une erreur HTTP 5xx ou d'une
+reponse vide. La temporisation est geree par Hermes et le garde-fou contre les
+reponses vides reste actif. Local-Codex ne renvoie jamais automatiquement le
+prompt ACP complet : une commande terminal ou une modification de fichier deja
+executee ne risque donc pas d'etre dupliquee. Le nombre de tentatives se regle
+avec `hermes.apiMaxRetries` (de 1 a 10) dans
+`config/LocalCodex.Settings.json`, puis s'applique avec l'action `Configure`.
+
 ## Commandes avancées
 
 ```powershell
@@ -87,12 +98,11 @@ permet de revoir les emplacements sans relancer une installation.
 
 ## Commandes du chat
 
-Chaque projet initialise recoit des commandes reutilisables dans
-`.github/prompts` :
-
-- `/verifier-openzim` teste la liste des archives puis lit un document local ;
-- `/verifier-codex` controle VS Code, ACP Client, Hermes, Ollama, le modele,
-  OpenZIM MCP et les archives, puis effectue une lecture documentaire reelle.
+Chaque projet initialise recoit une commande de diagnostic unique dans
+`.github/prompts` : `/verifier-codex`. Elle controle le projet, Git, VS Code,
+ACP Client, Hermes, l'integrite du profil, Ollama, le modele, le contexte 64K,
+les appels d'outils, les retries automatiques, OpenZIM MCP et les archives,
+puis effectue une lecture documentaire reelle.
 
 Dans VS Code, tapez `/` dans le chat et choisissez la commande. Vous pouvez
 aussi lancer `Chat: Run Prompt` depuis la palette de commandes. Le diagnostic
