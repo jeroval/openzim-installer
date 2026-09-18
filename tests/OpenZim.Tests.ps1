@@ -1,7 +1,6 @@
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $managerPath = Join-Path $projectRoot 'scripts\Invoke-ZimLibrary.ps1'
 $modulePath = Join-Path $projectRoot 'modules\OpenZim.Common.psm1'
-$hardwareModulePath = Join-Path $projectRoot 'modules\LocalAi.Hardware.psm1'
 $compatibilityServerPath = Join-Path $projectRoot 'scripts\OpenZimCompatServer.py'
 $catalogFixture = Join-Path $PSScriptRoot 'fixtures\catalog.xml'
 $sourcesFixture = Join-Path $PSScriptRoot 'fixtures\sources.json'
@@ -27,79 +26,10 @@ Describe 'Scripts PowerShell' {
             }
         }
     }
-
-    It 'integre Qwen 3.5 9B 32K comme profil agentique recommande' {
-        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
-        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
-        $modelfile = [IO.File]::ReadAllText((Join-Path $projectRoot 'config\Modelfile.Qwen35CodeAgent'))
-
-        if (-not $assistant.Contains('InstallQwen35Agent') -or
-            -not $assistant.Contains('Qwen 3.5 9B 32K - recommande pour le code agentique') -or
-            -not $assistant.Contains('Show-LocalAiHardwareRecommendation') -or
-            -not $assistant.Contains('-Default $recommendedChoice') -or
-            -not $installer.Contains('qwen3.5-code-agent:9b-32k') -or
-            -not $modelfile.Contains('FROM qwen3.5:9b-q4_K_M') -or
-            -not $modelfile.Contains('PARAMETER num_ctx 32768')) {
-            throw 'Le profil Qwen 3.5 agentique 32K est incomplet.'
-        }
-    }
-
-    It 'conserve Devstral Small 2 comme modele agentique optionnel exigeant' {
-        $assistant = [IO.File]::ReadAllText((Join-Path $projectRoot 'Start-OpenZimAssistant.ps1'))
-        $installer = [IO.File]::ReadAllText((Join-Path $projectRoot 'scripts\Install-LocalAi.ps1'))
-        if (-not $assistant.Contains('InstallDevstralAgent') -or
-            -not $installer.Contains('devstral-small-2:24b-instruct-2512-q4_K_M')) {
-            throw 'Le choix Devstral optionnel a disparu du selecteur.'
-        }
-    }
-}
-
-Describe 'Recommandation des modeles selon le materiel' {
-    BeforeAll {
-        Import-Module $hardwareModulePath -Force
-    }
-
-    It 'recommande le profil Qwen 3.5 avec 12 Go de VRAM et 32 Go de RAM' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB 12
-        if ($result.RecommendedChoice -ne '3') {
-            throw "Choix inattendu pour 12 Go de VRAM : $($result.RecommendedChoice)"
-        }
-        if (($result.Models | Where-Object Choice -EQ '4').Status -ne 'Deconseille') {
-            throw 'Devstral devrait etre deconseille avec 12 Go de VRAM.'
-        }
-    }
-
-    It 'prefere Qwen2.5-Coder lorsque 16 Go de VRAM sont disponibles' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB 16
-        if ($result.RecommendedChoice -ne '2') {
-            throw "Choix inattendu pour 16 Go de VRAM : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'prefere Devstral sur une configuration suffisamment dimensionnee' {
-        $result = Get-LocalAiRecommendation -RamGB 64 -VramGB 24
-        if ($result.RecommendedChoice -ne '4') {
-            throw "Choix inattendu pour 24 Go de VRAM : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'reste prudent lorsque la VRAM ne peut pas etre detectee' {
-        $result = Get-LocalAiRecommendation -RamGB 32 -VramGB $null
-        if ($result.RecommendedChoice -ne '3') {
-            throw "Le choix de repli devrait etre Qwen 3.5 : $($result.RecommendedChoice)"
-        }
-    }
-
-    It 'tolere la petite quantite de RAM reservee par Windows' {
-        $result = Get-LocalAiRecommendation -RamGB 31.1 -VramGB 12
-        if (($result.Models | Where-Object Choice -EQ '1').Status -eq 'Deconseille') {
-            throw 'Une machine vendue avec 32 Go ne devrait pas rejeter GPT-OSS pour 31,1 Go utilisables.'
-        }
-    }
 }
 
 Describe 'Passerelle MCP pour modeles locaux' {
-    It 'expose uniquement des schemas simples a GPT-OSS' {
+    It 'expose uniquement des schemas simples aux modeles Qwen locaux' {
         $bridge = [IO.File]::ReadAllText($compatibilityServerPath)
         foreach ($toolName in @(
             'openzim_list_archives',
@@ -319,6 +249,16 @@ Describe 'Instructions IA du projet' {
         [IO.File]::WriteAllText($instructionsPath, "# Regles du projet`r`n", [Text.UTF8Encoding]::new($false))
         $gitIgnorePath = Join-Path $workspace '.gitignore'
         [IO.File]::WriteAllText($gitIgnorePath, "# Regles existantes`r`n.env`r`n", [Text.UTF8Encoding]::new($false))
+        $legacyPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $legacyPromptPath)) | Out-Null
+        [IO.File]::WriteAllText($legacyPromptPath, @'
+---
+name: 'verifier-openzim'
+---
+<!-- openzim-startup-check:begin -->
+ancien diagnostic gere
+<!-- openzim-startup-check:end -->
+'@, [Text.UTF8Encoding]::new($false))
 
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
         Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
@@ -335,10 +275,10 @@ Describe 'Instructions IA du projet' {
         }
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
-        $startupPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        $localCodexPromptPath = Join-Path $workspace '.github\prompts\verifier-codex.prompt.md'
         $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
         $agentsPath = Join-Path $workspace 'AGENTS.md'
-        foreach ($generatedPath in @($standardsPath, $startupPromptPath, $guidePath, $agentsPath)) {
+        foreach ($generatedPath in @($standardsPath, $localCodexPromptPath, $guidePath, $agentsPath)) {
             if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
                 throw "Fichier de standards absent : $generatedPath"
             }
@@ -351,18 +291,24 @@ Describe 'Instructions IA du projet' {
         if (-not ([IO.File]::ReadAllText($agentsPath)).Contains('<!-- openzim-agent-policy:begin -->')) {
             throw 'La politique AGENTS.md geree est absente.'
         }
-        $startupPrompt = [IO.File]::ReadAllText($startupPromptPath)
-        if ($startupPrompt -notmatch 'name:\s*[''"]verifier-openzim[''"]' -or
-            -not $startupPrompt.Contains('openzim_list_archives') -or
-            -not $startupPrompt.Contains('openzim_search_archive') -or
-            -not $startupPrompt.Contains('exclusivement en fran')) {
-            throw 'Le prompt de verification OpenZIM est incomplet.'
+        if (Test-Path -LiteralPath $legacyPromptPath) {
+            throw 'L ancien prompt OpenZIM gere aurait du etre supprime.'
+        }
+        $localCodexPrompt = [IO.File]::ReadAllText($localCodexPromptPath)
+        if ($localCodexPrompt -notmatch 'name:\s*[''"]verifier-codex[''"]' -or
+            -not $localCodexPrompt.Contains('Test-LocalCodexHealth.ps1') -or
+            -not $localCodexPrompt.Contains('openzim_list_archives') -or
+            -not $localCodexPrompt.Contains('openzim_search_archive') -or
+            -not $localCodexPrompt.Contains('Retry automatique') -or
+            [regex]::Matches($localCodexPrompt, '<!-- local-codex-health-check:begin -->').Count -ne 1) {
+            throw 'Le prompt de verification Local-Codex est incomplet ou duplique.'
         }
 
         $gitIgnore = [IO.File]::ReadAllText($gitIgnorePath)
         if (-not $gitIgnore.Contains('.env') -or
             -not $gitIgnore.Contains('.vscode/mcp.json') -or
             -not $gitIgnore.Contains('.github/copilot-instructions.md') -or
+            -not $gitIgnore.Contains('.local-codex/') -or
             -not $gitIgnore.Contains('debug.log') -or
             -not $gitIgnore.Contains('*.zim') -or
             -not $gitIgnore.Contains('zim-inventory.json')) {
@@ -371,6 +317,15 @@ Describe 'Instructions IA du projet' {
         if ([regex]::Matches($gitIgnore, '# openzim-local:begin').Count -ne 1) {
             throw 'Le bloc Git local OpenZIM a ete duplique.'
         }
+    }
+
+    It 'conserve un ancien prompt OpenZIM personnalise' {
+        $legacyPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $legacyPromptPath)) | Out-Null
+        $custom = "---`nname: 'verifier-openzim'`n---`n# Contenu personnalise sans marqueurs geres`n"
+        [IO.File]::WriteAllText($legacyPromptPath, $custom, [Text.UTF8Encoding]::new($false))
+        Set-OpenZimProjectInstructions -WorkspacePath $workspace -Confirm:$false | Out-Null
+        [IO.File]::ReadAllText($legacyPromptPath) | Should Be $custom
     }
 
     It 'refuse un marqueur incomplet sans modifier le fichier' {
@@ -402,7 +357,7 @@ Describe 'Premier lancement' {
         New-Item -ItemType Directory -Path $emptyLibrary -Force | Out-Null
         $statusOutput = & $managerPath `
             -Action Status `
-            -ConfigPath (Join-Path $projectRoot 'config\OpenZim.Settings.json') `
+            -ConfigPath (Join-Path $projectRoot 'config\Knowledge.Settings.json') `
             -LibraryRoot $emptyLibrary 6>&1 | Out-String
 
         if ($statusOutput -notmatch '0 archive\(s\)') {

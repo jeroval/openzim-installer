@@ -1,16 +1,23 @@
 {
   "schemaVersion": 1,
   "agent": { "harness": "hermes", "profile": "balanced" },
+  "integration": {
+    "protocol": "ACP",
+    "vscodeExtension": "formulahendry.acp-client",
+    "agentName": "Local-Codex"
+  },
   "hardware": { "delegation": false },
   "model": { "catalog": "ModelCatalog.json", "id": "qwen35-9b-q4", "contextTokens": 65536 },
   "ollama": { "baseUrl": "http://127.0.0.1:11434", "timeoutSeconds": 300 },
   "hermes": {
     "revision": "64ea66b03d44ead9ffea48161132e5deca5d255a",
     "minimumContextTokens": 64000,
-    "pythonVersion": "3.11"
+    "pythonVersion": "3.11",
+    "apiMaxRetries": 5,
+    "emptyResponseGuard": true
   },
   "openzim": { "mode": "compatibility", "version": "3.3.3" },
-  "knowledge": { "legacyConfig": "OpenZim.Settings.json" },
+  "knowledge": { "config": "Knowledge.Settings.json" },
   "benchmark": { "contexts": [65536], "repetitions": 3, "outputTokens": 128 },
   "certification": { "timeoutSeconds": 900 },
   "updates": { "automaticPromotion": false },

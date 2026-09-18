@@ -20,6 +20,65 @@ function Get-LocalCodexModel {
     return $model
 }
 
+function Get-LocalCodexModelChoices {
+    param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)] $Hardware)
+    $catalog = Read-LocalCodexJson $Settings.CatalogPath
+    $ram = [double] $Hardware.ramTotalGB
+    $vram = if ($null -eq $Hardware.vramGB) { 0.0 } else { [double] $Hardware.vramGB }
+    $sharedGraphics = -not $Hardware.vramReliable -or $vram -lt 2
+    $sharedModelLimit = if ($ram -ge 32) { 9.65 } elseif ($ram -ge 16) { 4.0 } elseif ($ram -ge 8) { 2.0 } else { 0.8 }
+    $choices = foreach ($entry in @($catalog.models | Where-Object {
+        $_.family -eq 'Qwen' -and $_.generation -eq '3.5' -and
+        $_.parametersBillions -le 9.65 -and $_.status -notin @('deprecated','unsupported')
+    })) {
+        $ramOk = $ram -ge ([double] $entry.hardware.minimumRamGB * 0.95)
+        $gpuOk = $vram -ge [double] $entry.hardware.preferredVramGB
+        $compatible = $ramOk -and ($gpuOk -or
+            ($sharedGraphics -and [double] $entry.parametersBillions -le $sharedModelLimit) -or
+            (-not $sharedGraphics -and $ram -ge 24))
+        $detail = if (-not $ramOk) {
+            "RAM insuffisante : $($entry.hardware.minimumRamGB) Go requis"
+        }
+        elseif ($gpuOk) { 'execution GPU adaptee' }
+        elseif ($sharedGraphics) { 'execution CPU/iGPU possible, plus lente' }
+        else { 'offload partiel en RAM probable' }
+        [pscustomobject]@{
+            Id = $entry.id; Tag = $entry.ollamaTag; Variant = $entry.variant
+            DownloadGB = $entry.hardware.approximateDownloadGB
+            Compatible = $compatible; Detail = $detail
+            Rank = [double] $entry.parametersBillions
+        }
+    }
+    $recommended = $choices | Where-Object Compatible | Sort-Object Rank -Descending | Select-Object -First 1
+    [pscustomobject]@{
+        Choices = @($choices)
+        RecommendedId = if ($null -ne $recommended) { $recommended.Id } else { $null }
+    }
+}
+
+function Save-LocalCodexMachineSelection {
+    param([Parameter(Mandatory)][string] $StateDirectory,
+        [Parameter(Mandatory)][string] $ModelId, [Parameter(Mandatory)][int] $ContextTokens)
+    Assert-LocalCodexAgentContext $ContextTokens
+    Write-LocalCodexJson (Join-Path $StateDirectory 'machine.json') ([ordered]@{
+        schemaVersion = 1; modelId = $ModelId; contextTokens = $ContextTokens
+        updatedAtUtc = [datetime]::UtcNow.ToString('o')
+    })
+}
+
+function Import-LocalCodexMachineSelection {
+    param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory)
+    $path = Join-Path $StateDirectory 'machine.json'
+    if (Test-Path -LiteralPath $path) {
+        $selection = Read-LocalCodexJson $path
+        if ($selection.schemaVersion -ne 1) { throw 'Configuration machine Local-Codex non supportee.' }
+        Assert-LocalCodexAgentContext ([long] $selection.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
+        $Settings.model.id = [string] $selection.modelId
+        $Settings.model.contextTokens = [int] $selection.contextTokens
+    }
+    return $Settings
+}
+
 function Invoke-LocalCodexOllama {
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $Path, $Body)
     $parameters = @{ Uri = $Settings.ollama.baseUrl.TrimEnd('/') + $Path; TimeoutSec = [int] $Settings.ollama.timeoutSeconds; ErrorAction = 'Stop' }
@@ -34,13 +93,17 @@ function Invoke-LocalCodexOllama {
 function New-LocalCodexModelProfile {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory, [switch] $DownloadModel)
+    Assert-LocalCodexAgentContext ([long] $Settings.model.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
     $model = Get-LocalCodexModel $Settings
     $tags = Invoke-LocalCodexOllama $Settings '/api/tags'
     if ($model.ollamaTag -notin @($tags.models.name)) {
         if (-not $DownloadModel) { throw "Modele absent : $($model.ollamaTag). Relancez Install avec -DownloadModel pour autoriser ses $($model.hardware.approximateDownloadGB) Go." }
         if ($PSCmdlet.ShouldProcess($model.ollamaTag, 'Telecharger le modele explicitement demande')) {
             $ollama = (Get-Command ollama.exe -ErrorAction Stop).Source
-            Invoke-LocalCodexProcess $ollama @('pull', $model.ollamaTag) -TimeoutSeconds 7200 | Out-Null
+            Write-Host "      [INFO] Telechargement de $($model.ollamaTag) (~$($model.hardware.approximateDownloadGB) Go)" -ForegroundColor Cyan
+            Write-Host '             La progression ci-dessous est fournie directement par Ollama.' -ForegroundColor DarkGray
+            & $ollama pull $model.ollamaTag
+            if ($LASTEXITCODE -ne 0) { throw "Le telechargement Ollama a echoue (code $LASTEXITCODE)." }
         }
         if ($WhatIfPreference) { return }
     }
@@ -74,8 +137,9 @@ function New-LocalCodexModelProfile {
             createdAtUtc = [datetime]::UtcNow.ToString('o')
         }
         Write-LocalCodexJson (Join-Path $StateDirectory 'candidate.json') $candidate
+        Write-Host "      [OK] Profil Ollama pret : $profile" -ForegroundColor Green
         return [pscustomobject] $candidate
     }
 }
 
-Export-ModuleMember -Function Get-LocalCodexModel,Invoke-LocalCodexOllama,New-LocalCodexModelProfile
+Export-ModuleMember -Function Get-LocalCodexModel,Get-LocalCodexModelChoices,Save-LocalCodexMachineSelection,Import-LocalCodexMachineSelection,Invoke-LocalCodexOllama,New-LocalCodexModelProfile

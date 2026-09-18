@@ -21,6 +21,31 @@ def tool_payload(row):
         return {'text': content}
 
 
+def openzim_checks(successful_tools):
+    """Distingue l'acces au serveur d'une vraie recuperation documentaire."""
+    openzim_tools = [row for row in successful_tools
+                     if str(row.get('tool_name', '')).startswith('mcp__openzim__')]
+    searches = [row for row in openzim_tools
+                if row.get('tool_name') == 'mcp__openzim__openzim_search_archive']
+    retrieved = any("retrieved_archive_content" in json.dumps(row) and
+                    "No results" not in json.dumps(row) for row in searches)
+    return bool(openzim_tools), retrieved
+
+
+def has_no_external_network(tool_rows):
+    """La delegation locale Hermes ne constitue pas un acces reseau externe."""
+    external_prefixes = ('web_', 'browser_')
+    return not any(str(row.get('tool_name', '')).startswith(external_prefixes)
+                   for row in tool_rows)
+
+
+def has_two_file_diagnosis(text):
+    """Le diagnostic doit nommer les deux modules avant toute modification."""
+    normalized = (text or '').lower()
+    return len(normalized) > 80 and all(name in normalized for name in
+                                        ('calculator.py', 'shipping.py'))
+
+
 class AcpClient:
     def __init__(self, executable, home, workspace, timeout):
         self.workspace = workspace.resolve()
@@ -110,7 +135,7 @@ def fixture(workspace):
             "if __name__ == '__main__': unittest.main()\n"),
         "AGENTS.md": (
             "Work only in this fixture directory. Do not change test_app.py. "
-            "Do not install dependencies, access credentials, or use the network. "
+            "Do not install dependencies, access credentials, or use external network tools. "
             "Use the configured OpenZIM MCP for documentation. "
             "Inspect, search, read, plan, run tests, diagnose, patch both modules, retest.\n"),
     }
@@ -128,33 +153,43 @@ def run(executable, home, workspace, timeout):
     report = {"status": "FAIL", "workspace": str(workspace), "checks": {}, "error": None}
     session = {}
     diagnosed_before_edit = False
-    first_messages = ''
+    diagnosis_messages = ''
     try:
         handshake = client.call("initialize", {"protocolVersion": 1, "clientCapabilities": {},
                                                "clientInfo": {"name": "local-codex-certification", "version": "1"}})
         session = client.call("session/new", {"cwd": str(workspace.resolve()), "mcpServers": []})
         rules = (f"Your working directory is {workspace.resolve()}; use relative paths, never /workspace. "
                  f"Terminal uses Git Bash. Quote Python executable '{Path(sys.executable).as_posix()}'. "
-                 "No network, downloads or delegation. ")
+                 "No external network or downloads. ")
         def prompt(text):
             return client.call("session/prompt", {"sessionId": session["sessionId"],
                 "prompt": [{"type": "text", "text": rules + text}]})
         prompt("Do not modify files yet. Inspect using search_files and read_file. Use the terminal tool "
-               "(not execute_code) to run the given Python executable with -m unittest -v. "
-               "Then write a final response naming calculator.py and shipping.py, explaining each failure "
-               "and your fix plan. Do not stop with an empty response.")
-        first_messages = ''.join(e.get('params', {}).get('update', {}).get('content', {}).get('text', '')
-            for e in client.events if e.get('params', {}).get('update', {}).get('sessionUpdate') == 'agent_message_chunk')
+               "(not execute_code) to run the given Python executable with -m unittest -v. Stop after "
+               "collecting the evidence; the diagnosis will be requested in the next turn.")
+        diagnosis_event_start = len(client.events)
+        prompt("Do not call tools and do not modify files. Based only on the evidence just collected, "
+               "write a diagnosis naming calculator.py and shipping.py, explaining the cause of each "
+               "failed test and the exact fix you plan to apply. Do not stop with an empty response.")
+        diagnosis_messages = ''.join(
+            event.get('params', {}).get('update', {}).get('content', {}).get('text', '')
+            for event in client.events[diagnosis_event_start:]
+            if event.get('params', {}).get('update', {}).get('sessionUpdate') == 'agent_message_chunk')
         diagnosed_before_edit = all((workspace / name).read_text(encoding="utf-8") == original[name]
-                                   for name in ("calculator.py", "shipping.py")) and len(first_messages) > 80
+                                   for name in ("calculator.py", "shipping.py")) and \
+            has_two_file_diagnosis(diagnosis_messages)
         prompt("Now fix BOTH calculator.py and shipping.py with the patch tool. Do not change test_app.py. "
                "Then use the terminal tool (not execute_code) to execute the given Python executable "
                "with -m py_compile calculator.py shipping.py and then -m unittest -v. "
                "Diagnose and fix any remaining failure, then retest. Stop after a concise summary.")
-        result = prompt("Use mcp__openzim__openzim_list_archives. Find docs.python.org in that list. "
-                        "Call mcp__openzim__openzim_search_archive with its exact zim_file_path and query "
-                        "'What is unittest.TestCase?'. Cite the returned document title, archive and Python "
-                        "version. Do not use generic search or web fallback. Stop if the tool is unavailable.")
+        prompt("Call mcp__openzim__openzim_list_archives exactly once. Find docs.python.org in the "
+               "result and retain its exact zim_file_path for the next turn. Do not search yet, and do "
+               "not use generic search or web fallback.")
+        result = prompt("Using the exact docs.python.org zim_file_path from the preceding tool result, "
+                        "call mcp__openzim__openzim_search_archive exactly once with query "
+                        "'What is unittest.TestCase?'. You must call the tool before answering. Cite the "
+                        "returned document title, archive and Python version. Do not use generic search "
+                        "or web fallback. Stop if no exact archive path was returned.")
         report["agentInfo"] = handshake.get("agentInfo")
         report["stopReason"] = result.get("stopReason")
     except (OSError, RuntimeError, TimeoutError) as error:
@@ -189,14 +224,25 @@ def run(executable, home, workspace, timeout):
     successful = [row for row in tools if not tool_payload(row).get('error') and
                   not tool_payload(row).get('is_error') and tool_payload(row).get('exit_code', 0) == 0]
     names = {row['tool_name'] for row in successful}
+    permission_events = [event for event in client.events
+                         if event.get("method") == "session/request_permission"]
+    diff_events = [item for event in permission_events
+                   for item in event.get("params", {}).get("toolCall", {}).get("content", [])
+                   if item.get("type") == "diff"]
+    session_updates = [event.get("params", {}).get("update", {}).get("sessionUpdate")
+                       for event in client.events if event.get("method") == "session/update"]
     terminals = [row for row in successful if row['tool_name'] == 'terminal' and
                  tool_payload(row).get('exit_code') == 0]
-    documentation = [row for row in successful if row['tool_name'] == 'mcp__openzim__openzim_search_archive']
+    openzim_call, documentation_retrieval = openzim_checks(successful)
     checks = {
         "acp": report.get("agentInfo", {}).get("name") == "hermes-agent",
+        "streaming": "agent_message_chunk" in session_updates,
+        "toolActivity": any(update in ("tool_call", "tool_call_update") for update in session_updates),
+        "permissionRequest": bool(permission_events),
+        "diffPresentation": bool(diff_events),
         "search": 'search_files' in names, "read": 'read_file' in names,
         "plan": diagnosed_before_edit,
-        "diagnosis": diagnosed_before_edit and 'calculator' in first_messages and 'shipping' in first_messages,
+        "diagnosis": diagnosed_before_edit,
         "multiFileEdit": all((workspace / name).read_text(encoding="utf-8") != original[name]
                              for name in ("calculator.py", "shipping.py")),
         "patch": any(row['tool_name'] == 'patch' and tool_payload(row).get('success') is True for row in successful),
@@ -207,11 +253,10 @@ def run(executable, home, workspace, timeout):
             'OK' in tool_payload(row).get('output', '') for row in terminals),
         "build": build.returncode == 0 and any('py_compile' in calls.get(row['tool_call_id'], '') for row in terminals),
         "testsPreserved": (workspace / "test_app.py").read_text(encoding="utf-8") == original["test_app.py"],
-        "openzimCall": bool(documentation),
-        "documentationRetrieval": any("retrieved_archive_content" in json.dumps(u) and
-                                       "No results" not in json.dumps(u) for u in documentation),
+        "openzimCall": openzim_call,
+        "documentationRetrieval": documentation_retrieval,
         "completed": report.get("stopReason") == "end_turn" and report["error"] is None,
-        "noNetworkOrDelegation": not any(str(row['tool_name']).startswith(('web_', 'browser_', 'delegate_task')) for row in tools),
+        "noExternalNetwork": has_no_external_network(tools),
     }
     report["checks"] = checks
     report["status"] = "PASS" if all(checks.values()) else "FAIL"

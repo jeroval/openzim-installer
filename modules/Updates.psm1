@@ -19,8 +19,12 @@ function Set-LocalCodexCandidateRelease {
         revision = $Settings.hermes.revision; home = $paths.Home; executable = $paths.Executable
         configHash = (Get-FileHash -LiteralPath (Join-Path $paths.Home 'config.yaml')).Hash
     }
-    # Premiere installation utilisable en candidat ; un stable existant reste actif.
-    if ($null -eq $releases.active) { $releases.active = $releases.candidate }
+    # Premiere installation utilisable en candidat ; une reconfiguration du
+    # candidat actif actualise aussi son empreinte. Un stable reste immuable.
+    if ($null -eq $releases.active -or
+        ($releases.active.status -eq 'candidate' -and $releases.active.home -eq $releases.candidate.home)) {
+        $releases.active = $releases.candidate
+    }
     Write-LocalCodexJson (Join-Path $StateDirectory 'releases.json') $releases
     return $releases
 }
@@ -30,11 +34,12 @@ function Publish-LocalCodexCandidate {
     $report = Read-LocalCodexJson (Join-Path $StateDirectory 'certification.json')
     $fingerprint = Get-LocalCodexFingerprint $Settings $StateDirectory
     $required = @('Git','VSCode','ACPClient','Hermes','ACP','Ollama','Qwen','Configuration',
-        'OpenZimMCP','ZimLibrary','Benchmark','AgentScenario','Agent.acp','Agent.search',
+        'OpenZimMCP','ZimLibrary','Benchmark','AgentScenario','Agent.acp','Agent.streaming',
+        'Agent.toolActivity','Agent.permissionRequest','Agent.diffPresentation','Agent.search',
         'Agent.read','Agent.plan','Agent.diagnosis','Agent.multiFileEdit','Agent.patch',
         'Agent.terminal','Agent.observedFailure','Agent.retest','Agent.build',
         'Agent.testsPreserved','Agent.openzimCall','Agent.documentationRetrieval',
-        'Agent.completed','Agent.noNetworkOrDelegation')
+        'Agent.completed','Agent.noExternalNetwork')
     foreach ($name in $required) {
         $matches = @($report.checks | Where-Object name -EQ $name)
         if ($matches.Count -ne 1 -or $matches[0].status -ne 'PASS') {

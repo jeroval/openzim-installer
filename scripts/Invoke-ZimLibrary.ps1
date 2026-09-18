@@ -91,7 +91,7 @@ $ErrorActionPreference = 'Stop'
 # region Initialisation de la configuration
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
-    $ConfigPath = Join-Path $repositoryRoot 'config\OpenZim.Settings.json'
+    $ConfigPath = Join-Path $repositoryRoot 'config\Knowledge.Settings.json'
 }
 $commonModule = Join-Path $repositoryRoot 'modules\OpenZim.Common.psm1'
 Import-Module $commonModule -Force

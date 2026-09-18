@@ -32,6 +32,35 @@ class CertificationTests(unittest.TestCase):
     def test_non_json_result_does_not_invent_an_exit_code(self):
         self.assertNotIn('exit_code', certify.tool_payload({'content': 'not JSON'}))
 
+    def test_archive_listing_proves_openzim_access_without_document_retrieval(self):
+        tools = [{'tool_name': 'mcp__openzim__openzim_list_archives',
+                  'content': '{"result":"docs.python.org_en_2024-05.zim"}'}]
+        self.assertEqual(certify.openzim_checks(tools), (True, False))
+
+    def test_archive_search_proves_document_retrieval(self):
+        tools = [{'tool_name': 'mcp__openzim__openzim_search_archive',
+                  'content': '<retrieved_archive_content>TestCase</retrieved_archive_content>'}]
+        self.assertEqual(certify.openzim_checks(tools), (True, True))
+
+    def test_unrelated_tool_does_not_prove_openzim_access(self):
+        tools = [{'tool_name': 'read_file', 'content': 'fixture'}]
+        self.assertEqual(certify.openzim_checks(tools), (False, False))
+
+    def test_local_delegation_is_not_misreported_as_external_network(self):
+        tools = [{'tool_name': 'delegate_task', 'content': 'local Ollama subagent'}]
+        self.assertTrue(certify.has_no_external_network(tools))
+
+    def test_web_tool_is_reported_as_external_network(self):
+        tools = [{'tool_name': 'web_search', 'content': 'external result'}]
+        self.assertFalse(certify.has_no_external_network(tools))
+
+    def test_diagnosis_requires_both_file_names(self):
+        complete = ('calculator.py subtracts instead of adding; replace subtraction with addition. '
+                    'shipping.py reverses the free-shipping threshold; invert that condition.')
+        incomplete = 'I inspected the working directory and I will now explain the failures in detail.'
+        self.assertTrue(certify.has_two_file_diagnosis(complete))
+        self.assertFalse(certify.has_two_file_diagnosis(incomplete))
+
 
 class BenchmarkTests(unittest.TestCase):
     def test_rejects_remote_endpoint(self):

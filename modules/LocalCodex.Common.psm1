@@ -1,6 +1,18 @@
 #requires -Version 5.1
 Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'OpenZim.Common.psm1')
+$script:LocalCodexMinimumAgentContextTokens = 64000
+
+function Assert-LocalCodexAgentContext {
+    param(
+        [Parameter(Mandatory)][long] $ContextTokens,
+        [long] $ConfiguredMinimum = 64000
+    )
+    $minimum = [Math]::Max($script:LocalCodexMinimumAgentContextTokens, $ConfiguredMinimum)
+    if ($ContextTokens -lt $minimum) {
+        throw "Contexte agentique invalide : Hermes exige au moins $minimum tokens. Local-Codex ne reduit jamais cette valeur pour economiser la VRAM."
+    }
+}
 
 function Read-LocalCodexJson {
     param([Parameter(Mandatory)][string] $Path)
@@ -28,11 +40,25 @@ function Get-LocalCodexConfiguration {
     $settings = Read-LocalCodexJson $Path
     if ($settings.schemaVersion -ne 1) { throw 'Version de configuration Local-Codex non supportee.' }
     if ($settings.model.id -notmatch '^[a-z0-9][a-z0-9-]{0,63}$') { throw 'Identifiant de modele invalide.' }
+    if ($settings.integration.protocol -ne 'ACP' -or
+        [string]::IsNullOrWhiteSpace([string] $settings.integration.vscodeExtension) -or
+        [string]::IsNullOrWhiteSpace([string] $settings.integration.agentName)) {
+        throw 'Integration invalide : ACP, son extension VS Code et le nom de l agent sont obligatoires.'
+    }
+    # Migration additive du schema 1 : les anciennes configurations restent
+    # valides tout en beneficiant de la politique de reprise sure par defaut.
+    if ($null -eq $settings.hermes.PSObject.Properties['apiMaxRetries']) {
+        $settings.hermes | Add-Member NoteProperty apiMaxRetries 5
+    }
+    if ($null -eq $settings.hermes.PSObject.Properties['emptyResponseGuard']) {
+        $settings.hermes | Add-Member NoteProperty emptyResponseGuard $true
+    }
     foreach ($limit in @(
         @($settings.model.contextTokens, 64000, 4194304),
         @($settings.benchmark.repetitions, 1, 20),
         @($settings.benchmark.outputTokens, 1, 8192),
         @($settings.ollama.timeoutSeconds, 10, 3600),
+        @($settings.hermes.apiMaxRetries, 1, 10),
         @($settings.certification.timeoutSeconds, 30, 3600)
     )) {
         if ($limit[0] -isnot [int] -and $limit[0] -isnot [long]) { throw 'Parametre numerique entier requis.' }
@@ -40,7 +66,8 @@ function Get-LocalCodexConfiguration {
     }
     if (@($settings.benchmark.contexts).Count -eq 0) { throw 'Au moins un contexte benchmark est requis.' }
     foreach ($context in $settings.benchmark.contexts) {
-        if ($context -isnot [int] -or $context -lt $settings.hermes.minimumContextTokens -or $context -gt 4194304) {
+        if (($context -isnot [int] -and $context -isnot [long]) -or
+            $context -lt $settings.hermes.minimumContextTokens -or $context -gt 4194304) {
             throw 'Contexte benchmark invalide.'
         }
     }
@@ -48,18 +75,17 @@ function Get-LocalCodexConfiguration {
     if (-not $endpoint.IsLoopback -or $endpoint.Scheme -notin @('http','https') -or $endpoint.UserInfo) {
         throw 'Ollama doit utiliser une URL locale sans identifiants.'
     }
-    if ($settings.model.contextTokens -lt $settings.hermes.minimumContextTokens) {
-        throw 'Contexte inferieur au minimum Hermes configure ; le profil historique 32K reste separe.'
-    }
+    Assert-LocalCodexAgentContext $settings.hermes.minimumContextTokens
+    Assert-LocalCodexAgentContext $settings.model.contextTokens $settings.hermes.minimumContextTokens
     if ($settings.hermes.revision -notmatch '^[a-f0-9]{40}$') { throw 'Hermes exige une revision Git complete et epinglee.' }
+    if ($settings.hermes.emptyResponseGuard -isnot [bool]) { throw 'Le garde-fou de reponse vide Hermes doit etre un booleen.' }
     if ($settings.updates.automaticPromotion) { throw 'La promotion automatique est interdite.' }
     $configDirectory = Split-Path -Parent ([IO.Path]::GetFullPath($Path))
-    $legacyPath = [Environment]::ExpandEnvironmentVariables($settings.knowledge.legacyConfig)
-    if (-not [IO.Path]::IsPathRooted($legacyPath)) { $legacyPath = Join-Path $configDirectory $legacyPath }
-    $legacy = Read-LocalCodexJson $legacyPath
-    # La source historique reste autoritaire : budget, reprises et taches ne divergent pas.
-    $settings | Add-Member NoteProperty KnowledgeSettings $legacy
-    $settings | Add-Member NoteProperty LegacyConfigPath $legacyPath
+    $knowledgePath = [Environment]::ExpandEnvironmentVariables($settings.knowledge.config)
+    if (-not [IO.Path]::IsPathRooted($knowledgePath)) { $knowledgePath = Join-Path $configDirectory $knowledgePath }
+    $knowledge = Read-LocalCodexJson $knowledgePath
+    $settings | Add-Member NoteProperty KnowledgeSettings $knowledge
+    $settings | Add-Member NoteProperty KnowledgeConfigPath $knowledgePath
     $catalogPath = Join-Path $configDirectory $settings.model.catalog
     $settings | Add-Member NoteProperty CatalogPath $catalogPath
     return $settings
@@ -103,4 +129,4 @@ function Invoke-LocalCodexProcess {
     finally { $process.Dispose() }
 }
 
-Export-ModuleMember -Function Read-LocalCodexJson,Write-LocalCodexJson,Get-LocalCodexConfiguration,Invoke-LocalCodexProcess
+Export-ModuleMember -Function Assert-LocalCodexAgentContext,Read-LocalCodexJson,Write-LocalCodexJson,Get-LocalCodexConfiguration,Invoke-LocalCodexProcess
