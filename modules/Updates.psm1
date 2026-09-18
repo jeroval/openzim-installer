@@ -35,7 +35,7 @@ function Publish-LocalCodexCandidate {
         'Agent.read','Agent.plan','Agent.diagnosis','Agent.multiFileEdit','Agent.patch',
         'Agent.terminal','Agent.observedFailure','Agent.retest','Agent.build',
         'Agent.testsPreserved','Agent.openzimCall','Agent.documentationRetrieval',
-        'Agent.completed','Agent.noNetworkOrDelegation')
+        'Agent.completed','Agent.noExternalNetwork')
     foreach ($name in $required) {
         $matches = @($report.checks | Where-Object name -EQ $name)
         if ($matches.Count -ne 1 -or $matches[0].status -ne 'PASS') {

@@ -12,7 +12,7 @@ function Get-LocalCodexAgentEvidenceLabel {
         terminal = 'commandes de test executees'; observedFailure = 'echec initial observe'; retest = 'tests relances apres correction'
         build = 'verification de syntaxe executee'; testsPreserved = 'tests existants preserves'; openzimCall = 'outil OpenZIM appele'
         documentationRetrieval = 'documentation locale retrouvee'; completed = 'scenario mene a son terme'
-        noNetworkOrDelegation = 'aucun reseau ni delegation utilise'
+        noExternalNetwork = 'aucun outil reseau externe utilise'
     }
     if ($labels.ContainsKey($Name)) { return $labels[$Name] }
     return "preuve $Name"
