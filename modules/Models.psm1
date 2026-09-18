@@ -94,13 +94,44 @@ function Invoke-LocalCodexOllama {
     Invoke-RestMethod @parameters
 }
 
+function Get-LocalCodexOllamaModels {
+    param($Response)
+    if ($null -eq $Response -or $null -eq $Response.PSObject.Properties['models']) {
+        return @()
+    }
+    $result = foreach ($entry in @($Response.models)) {
+        if ($null -eq $entry) { continue }
+        $nameProperty = $entry.PSObject.Properties['name']
+        if ($null -eq $nameProperty) { $nameProperty = $entry.PSObject.Properties['model'] }
+        if ($null -eq $nameProperty -or [string]::IsNullOrWhiteSpace([string] $nameProperty.Value)) {
+            continue
+        }
+        $digestProperty = $entry.PSObject.Properties['digest']
+        [pscustomobject]@{
+            Name = [string] $nameProperty.Value
+            Digest = if ($null -ne $digestProperty) { [string] $digestProperty.Value } else { '' }
+            Raw = $entry
+        }
+    }
+    return @($result)
+}
+
+function Test-LocalCodexOllamaModelInstalled {
+    param([object[]] $Models, [Parameter(Mandatory)][string] $Name)
+    foreach ($entry in @($Models)) {
+        if ($null -ne $entry -and [string] $entry.Name -eq $Name) { return $true }
+    }
+    return $false
+}
+
 function New-LocalCodexModelProfile {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory, [switch] $DownloadModel)
     Assert-LocalCodexAgentContext ([long] $Settings.model.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
     $model = Get-LocalCodexModel $Settings
     $tags = Invoke-LocalCodexOllama $Settings '/api/tags'
-    if ($model.ollamaTag -notin @($tags.models.name)) {
+    $installedModels = @(Get-LocalCodexOllamaModels $tags)
+    if (-not (Test-LocalCodexOllamaModelInstalled $installedModels $model.ollamaTag)) {
         if (-not $DownloadModel) { throw "Modele absent : $($model.ollamaTag). Relancez Install avec -DownloadModel pour autoriser ses $($model.hardware.approximateDownloadGB) Go." }
         if ($PSCmdlet.ShouldProcess($model.ollamaTag, 'Telecharger le modele explicitement demande')) {
             $ollama = (Get-Command ollama.exe -ErrorAction Stop).Source
@@ -110,6 +141,11 @@ function New-LocalCodexModelProfile {
             if ($LASTEXITCODE -ne 0) { throw "Le telechargement Ollama a echoue (code $LASTEXITCODE)." }
         }
         if ($WhatIfPreference) { return }
+        $tags = Invoke-LocalCodexOllama $Settings '/api/tags'
+        $installedModels = @(Get-LocalCodexOllamaModels $tags)
+        if (-not (Test-LocalCodexOllamaModelInstalled $installedModels $model.ollamaTag)) {
+            throw "Ollama ne confirme pas l installation de $($model.ollamaTag) apres le telechargement."
+        }
     }
     $details = Invoke-LocalCodexOllama $Settings '/api/show' @{ model = $model.ollamaTag }
     if ('tools' -notin @($details.capabilities)) { throw 'Ollama ne confirme pas le tool calling.' }
@@ -119,12 +155,15 @@ function New-LocalCodexModelProfile {
         throw 'Contexte demande non confirme par les metadonnees Ollama.'
     }
     $tags = Invoke-LocalCodexOllama $Settings '/api/tags'
-    $base = @($tags.models | Where-Object name -EQ $model.ollamaTag)[0]
-    $digest = ([string] $base.digest) -replace '^sha256:', ''
+    $installedModels = @(Get-LocalCodexOllamaModels $tags)
+    $baseMatches = @($installedModels | Where-Object Name -EQ $model.ollamaTag)
+    if ($baseMatches.Count -ne 1) { throw 'Modele Ollama de base absent ou ambigu apres verification.' }
+    $base = $baseMatches[0]
+    $digest = ([string] $base.Digest) -replace '^sha256:', ''
     if ($digest -notmatch '^[a-f0-9]{64}$') { throw 'Digest Ollama invalide.' }
     $profile = "local-codex-$($model.id):$($Settings.model.contextTokens)-$($digest.Substring(0,12))"
     if ($PSCmdlet.ShouldProcess($profile, 'Creer un profil candidat sans remplacer les modeles existants')) {
-        if ($profile -notin @($tags.models.name)) {
+        if (-not (Test-LocalCodexOllamaModelInstalled $installedModels $profile)) {
             $created = Invoke-LocalCodexOllama $Settings '/api/create' @{
                 model = $profile; from = $model.ollamaTag; stream = $false
                 parameters = @{ num_ctx = [int] $Settings.model.contextTokens }
@@ -137,7 +176,7 @@ function New-LocalCodexModelProfile {
         }
         $candidate = [ordered]@{
             schemaVersion = 1; status = 'candidate'; modelId = $model.id; model = $profile
-            baseDigest = $base.digest; contextTokens = [int] $Settings.model.contextTokens
+            baseDigest = $base.Digest; contextTokens = [int] $Settings.model.contextTokens
             hermesRevision = $Settings.hermes.revision
             createdAtUtc = [datetime]::UtcNow.ToString('o')
         }
@@ -147,4 +186,4 @@ function New-LocalCodexModelProfile {
     }
 }
 
-Export-ModuleMember -Function Get-LocalCodexModel,Get-LocalCodexModelChoices,Save-LocalCodexMachineSelection,Import-LocalCodexMachineSelection,Invoke-LocalCodexOllama,New-LocalCodexModelProfile
+Export-ModuleMember -Function Get-LocalCodexModel,Get-LocalCodexModelChoices,Save-LocalCodexMachineSelection,Import-LocalCodexMachineSelection,Invoke-LocalCodexOllama,Get-LocalCodexOllamaModels,Test-LocalCodexOllamaModelInstalled,New-LocalCodexModelProfile

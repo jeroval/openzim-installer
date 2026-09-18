@@ -129,6 +129,18 @@ Describe 'Promotion et rollback offline' {
 }
 
 Describe 'Local-Codex configuration et catalogue offline' {
+    It 'accepte un catalogue Ollama vide et les deux noms de propriete API' {
+        @(Get-LocalCodexOllamaModels ([pscustomobject]@{ models=@() })).Count | Should Be 0
+        $models = @(Get-LocalCodexOllamaModels ([pscustomobject]@{ models=@(
+            [pscustomobject]@{ name='first:1'; digest=('a' * 64) }
+            [pscustomobject]@{ model='second:2'; digest=('b' * 64) }
+        ) }))
+        $models.Count | Should Be 2
+        $models[0].Name | Should Be 'first:1'
+        $models[1].Name | Should Be 'second:2'
+        Test-LocalCodexOllamaModelInstalled @() 'missing:1' | Should Be $false
+        Test-LocalCodexOllamaModelInstalled $models 'second:2' | Should Be $true
+    }
     It 'centralise chaque prerequis machine dans une definition unique' {
         $definitions = @(Get-LocalCodexPrerequisiteDefinitions)
         $definitions.Count | Should Be 4
