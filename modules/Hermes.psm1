@@ -136,6 +136,12 @@ function Set-LocalCodexVSCode {
     $value = if (Test-Path -LiteralPath $path) { Read-LocalCodexJson $path } else { [pscustomobject]@{} }
     # Refuse le JSONC non analysable plutot que de perdre commentaires et reglages.
     if ($null -eq $value.PSObject.Properties['acp.agents']) { $value | Add-Member NoteProperty 'acp.agents' ([pscustomobject]@{}) }
+    if ($null -eq $value.PSObject.Properties['chat.useAgentsMdFile']) {
+        $value | Add-Member NoteProperty 'chat.useAgentsMdFile' $true
+    }
+    if ($null -eq $value.PSObject.Properties['chat.includeApplyingInstructions']) {
+        $value | Add-Member NoteProperty 'chat.includeApplyingInstructions' $true
+    }
     $launcher = Join-Path (Split-Path -Parent $PSScriptRoot) 'scripts\Start-LocalCodexAcp.ps1'
     $agent = [pscustomobject]@{
         command = Join-Path $PSHOME 'powershell.exe'
@@ -147,7 +153,7 @@ function Set-LocalCodexVSCode {
         throw 'Agent ACP Local-Codex deja configure differemment ; configuration preservee.'
     }
     $value.'acp.agents' | Add-Member NoteProperty $agentName $agent -Force
-    if ($PSCmdlet.ShouldProcess($path, 'Ajouter Hermes au client ACP de VS Code')) { Write-LocalCodexJson $path $value }
+    if ($PSCmdlet.ShouldProcess($path, 'Configurer ACP et les instructions du chat natif VS Code')) { Write-LocalCodexJson $path $value }
 }
 
 Export-ModuleMember -Function Get-LocalCodexHermesPaths,Install-LocalCodexHermes,New-LocalCodexHermesConfiguration,Set-LocalCodexHermesConfiguration,Set-LocalCodexVSCode

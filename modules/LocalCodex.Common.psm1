@@ -45,6 +45,16 @@ function Get-LocalCodexConfiguration {
         [string]::IsNullOrWhiteSpace([string] $settings.integration.agentName)) {
         throw 'Integration invalide : ACP, son extension VS Code et le nom de l agent sont obligatoires.'
     }
+    if ($null -eq $settings.integration.PSObject.Properties['nativeModelExtension']) {
+        $settings.integration | Add-Member NoteProperty nativeModelExtension 'ollama.ollama'
+    }
+    if ($null -eq $settings.integration.PSObject.Properties['nativeAgentName']) {
+        $settings.integration | Add-Member NoteProperty nativeAgentName 'Local-Codex Native'
+    }
+    if ([string]::IsNullOrWhiteSpace([string] $settings.integration.nativeModelExtension) -or
+        [string]::IsNullOrWhiteSpace([string] $settings.integration.nativeAgentName)) {
+        throw 'Integration du chat natif VS Code incomplete.'
+    }
     # Migration additive du schema 1 : les anciennes configurations restent
     # valides tout en beneficiant de la politique de reprise sure par defaut.
     if ($null -eq $settings.hermes.PSObject.Properties['apiMaxRetries']) {

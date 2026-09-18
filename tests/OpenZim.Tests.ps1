@@ -276,9 +276,10 @@ ancien diagnostic gere
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
         $localCodexPromptPath = Join-Path $workspace '.github\prompts\verifier-codex.prompt.md'
+        $nativeAgentPath = Join-Path $workspace '.github\agents\local-codex-native.agent.md'
         $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
         $agentsPath = Join-Path $workspace 'AGENTS.md'
-        foreach ($generatedPath in @($standardsPath, $localCodexPromptPath, $guidePath, $agentsPath)) {
+        foreach ($generatedPath in @($standardsPath, $localCodexPromptPath, $nativeAgentPath, $guidePath, $agentsPath)) {
             if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
                 throw "Fichier de standards absent : $generatedPath"
             }
@@ -302,6 +303,12 @@ ancien diagnostic gere
             -not $localCodexPrompt.Contains('Retry automatique') -or
             [regex]::Matches($localCodexPrompt, '<!-- local-codex-health-check:begin -->').Count -ne 1) {
             throw 'Le prompt de verification Local-Codex est incomplet ou duplique.'
+        }
+        $nativeAgent = [IO.File]::ReadAllText($nativeAgentPath)
+        if ($nativeAgent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
+            -not $nativeAgent.Contains("tools: ['read', 'search', 'edit', 'execute', 'openzim/*']") -or
+            [regex]::Matches($nativeAgent, '<!-- local-codex-native-agent:begin -->').Count -ne 1) {
+            throw 'Le custom agent natif est incomplet ou duplique.'
         }
 
         $gitIgnore = [IO.File]::ReadAllText($gitIgnorePath)

@@ -33,8 +33,8 @@ function Publish-LocalCodexCandidate {
     param([Parameter(Mandatory)] $Settings, [Parameter(Mandatory)][string] $StateDirectory)
     $report = Read-LocalCodexJson (Join-Path $StateDirectory 'certification.json')
     $fingerprint = Get-LocalCodexFingerprint $Settings $StateDirectory
-    $required = @('Git','VSCode','ACPClient','Hermes','ACP','Ollama','Qwen','Configuration',
-        'OpenZimMCP','ZimLibrary','Benchmark','AgentScenario','Agent.acp','Agent.streaming',
+    $required = @('Git','VSCode','ACPClient','OllamaVSCode','Hermes','ACP','Ollama','Qwen','Configuration',
+        'NativeChat','OpenZimMCP','ZimLibrary','Benchmark','AgentScenario','Agent.acp','Agent.streaming',
         'Agent.toolActivity','Agent.permissionRequest','Agent.diffPresentation','Agent.search',
         'Agent.read','Agent.plan','Agent.diagnosis','Agent.multiFileEdit','Agent.patch',
         'Agent.terminal','Agent.observedFailure','Agent.retest','Agent.build',

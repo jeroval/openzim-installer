@@ -13,6 +13,18 @@ Visual Studio Code -> ACP Client -> Hermes Agent -> Ollama -> Qwen 3.5
                               +-> OpenZIM MCP -> archives ZIM locales
 ```
 
+Le meme projet est aussi prepare pour le chat natif de VS Code :
+
+```text
+Chat natif VS Code -> extension Ollama -> profil Qwen Local-Codex
+                    -> outils natifs fichiers / terminal / tests
+                    -> OpenZIM MCP -> archives ZIM locales
+```
+
+Local-Codex installe toujours les deux integrations, sans ajouter de choix au
+parcours debutant. Hermes reste l'orchestrateur de l'onglet ACP ; le custom
+agent `Local-Codex Native` optimise l'onglet Chat natif.
+
 ACP est une exigence de Local-Codex, pas un mode optionnel. Il transporte entre
 VS Code et Hermes la conversation, le streaming, l'activité des outils, les
 commandes terminal, les demandes d'autorisation et les modifications de
@@ -107,5 +119,11 @@ puis effectue une lecture documentaire reelle.
 Dans VS Code, tapez `/` dans le chat et choisissez la commande. Vous pouvez
 aussi lancer `Chat: Run Prompt` depuis la palette de commandes. Le diagnostic
 machine utilise `.local-codex/Test-LocalCodexHealth.ps1` en lecture seule.
+
+Pour utiliser le chat natif, rechargez VS Code apres l'initialisation du projet,
+selectionnez `Local-Codex Native` dans la liste des agents, puis choisissez le
+profil Ollama `local-codex-*` actif dans le selecteur de modele. Au premier
+demarrage, acceptez l'execution du serveur MCP local `openzim`. Les chemins
+machine de `.vscode/mcp.json` restent exclus de Git.
 
 Les projets, dépôts Git et archives ZIM ne sont jamais supprimés silencieusement.

@@ -1,7 +1,7 @@
 ---
 name: 'verifier-codex'
 description: 'Contrôle la chaîne locale VS Code, ACP, Hermes, Ollama, Qwen et OpenZIM.'
-agent: 'agent'
+agent: 'Local-Codex Native'
 tools: ['execute/runInTerminal', 'openzim/*']
 ---
 

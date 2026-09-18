@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import sqlite3
 import subprocess
 import sys
@@ -44,6 +45,40 @@ def has_two_file_diagnosis(text):
     normalized = (text or '').lower()
     return len(normalized) > 80 and all(name in normalized for name in
                                         ('calculator.py', 'shipping.py'))
+
+
+def is_successful_tool(row):
+    """Un resultat Hermes reussi ne doit contenir ni erreur ni code non nul."""
+    payload = tool_payload(row)
+    return (not payload.get('error') and not payload.get('is_error') and
+            payload.get('exit_code', 0) == 0 and payload.get('status') != 'error')
+
+
+def has_successful_file_read(tool_rows, call_arguments):
+    """Reconnait read_file direct ou execute via le bac a sable Hermes.
+
+    Hermes peut regrouper plusieurs outils Python dans ``execute_code``. Dans
+    ce cas la base de session enregistre le conteneur, pas ``read_file`` comme
+    nom d'outil principal. On exige donc simultanement un appel read_file, un
+    sous-outil effectivement execute, une sortie et un resultat sans erreur.
+    """
+    for row in tool_rows:
+        if not is_successful_tool(row):
+            continue
+        if row.get('tool_name') == 'read_file':
+            return True
+        if row.get('tool_name') != 'execute_code':
+            continue
+        try:
+            arguments = json.loads(call_arguments.get(row.get('tool_call_id'), '') or '{}')
+        except (ValueError, TypeError):
+            continue
+        code = arguments.get('code', '') if isinstance(arguments, dict) else ''
+        payload = tool_payload(row)
+        if (re.search(r'\bread_file\s*\(', code) and
+                payload.get('tool_calls_made', 0) > 0 and payload.get('output')):
+            return True
+    return False
 
 
 class AcpClient:
@@ -221,8 +256,7 @@ def run(executable, home, workspace, timeout):
         if row.get('tool_calls'):
             for call in json.loads(row['tool_calls']):
                 calls[call['id']] = call.get('function', {}).get('arguments', '')
-    successful = [row for row in tools if not tool_payload(row).get('error') and
-                  not tool_payload(row).get('is_error') and tool_payload(row).get('exit_code', 0) == 0]
+    successful = [row for row in tools if is_successful_tool(row)]
     names = {row['tool_name'] for row in successful}
     permission_events = [event for event in client.events
                          if event.get("method") == "session/request_permission"]
@@ -240,7 +274,7 @@ def run(executable, home, workspace, timeout):
         "toolActivity": any(update in ("tool_call", "tool_call_update") for update in session_updates),
         "permissionRequest": bool(permission_events),
         "diffPresentation": bool(diff_events),
-        "search": 'search_files' in names, "read": 'read_file' in names,
+        "search": 'search_files' in names, "read": has_successful_file_read(tools, calls),
         "plan": diagnosed_before_edit,
         "diagnosis": diagnosed_before_edit,
         "multiFileEdit": all((workspace / name).read_text(encoding="utf-8") != original[name]

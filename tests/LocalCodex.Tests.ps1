@@ -274,15 +274,41 @@ Describe 'Experience utilisateur Local-Codex' {
         Set-LocalCodexProjectAgentConfiguration $settings (Join-Path $TestDrive 'command-state') $project -Confirm:$false | Out-Null
         $prompt = Join-Path $project '.github\prompts\verifier-codex.prompt.md'
         $health = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
+        $nativeAgent = Join-Path $project '.github\agents\local-codex-native.agent.md'
+        $nativeMcp = Join-Path $project '.vscode\mcp.json'
         Test-Path -LiteralPath $prompt -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $health -PathType Leaf | Should Be $true
+        Test-Path -LiteralPath $nativeAgent -PathType Leaf | Should Be $true
+        Test-Path -LiteralPath $nativeMcp -PathType Leaf | Should Be $true
         $promptContent = [IO.File]::ReadAllText($prompt)
         $healthContent = [IO.File]::ReadAllText($health)
         $promptContent.Contains("name: 'verifier-codex'") | Should Be $true
         $promptContent.Contains("'execute/runInTerminal'") | Should Be $true
         $promptContent.Contains('openzim_search_archive') | Should Be $true
         $healthContent.Contains("Add-HealthCheck 'AutomaticRetry'") | Should Be $true
+        $healthContent.Contains("Add-HealthCheck 'NativeChat'") | Should Be $true
+        (Read-LocalCodexJson $nativeMcp).servers.openzim.type | Should Be 'stdio'
         Test-Path -LiteralPath (Join-Path $project '.github\prompts\verifier-openzim.prompt.md') | Should Be $false
+    }
+
+    It 'preserve les autres serveurs MCP du chat natif' {
+        $project = Join-Path $TestDrive 'native-mcp-project'
+        $path = Join-Path $project '.vscode\mcp.json'
+        Write-LocalCodexJson $path @{ servers = @{ existing = @{ type='http'; url='http://127.0.0.1:9999' } } }
+        $server = [pscustomobject]@{ command='C:\Tools\python.exe'; args=@('bridge.py','C:\ZIM') }
+        Set-LocalCodexNativeMcp $project $server -Confirm:$false
+        $result = Read-LocalCodexJson $path
+        $result.servers.existing.url | Should Be 'http://127.0.0.1:9999'
+        $result.servers.openzim.command | Should Be 'C:\Tools\python.exe'
+    }
+
+    It 'refuse d ecraser un serveur OpenZIM natif personnalise' {
+        $project = Join-Path $TestDrive 'native-mcp-conflict'
+        $path = Join-Path $project '.vscode\mcp.json'
+        Write-LocalCodexJson $path @{ servers = @{ openzim = @{ type='stdio'; command='custom.exe'; args=@('custom') } } }
+        $server = [pscustomobject]@{ command='C:\Tools\python.exe'; args=@('bridge.py','C:\ZIM') }
+        { Set-LocalCodexNativeMcp $project $server -Confirm:$false } | Should Throw
+        (Read-LocalCodexJson $path).servers.openzim.command | Should Be 'custom.exe'
     }
 
     It 'inventorie les emplacements importants sans modifier la machine' {

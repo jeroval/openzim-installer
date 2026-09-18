@@ -174,8 +174,9 @@ function Set-OpenZimProjectInstructions {
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     $standardsTemplatePath = Join-Path $repositoryRoot 'templates\Development-Standards.instructions.md'
     $localCodexPromptTemplatePath = Join-Path $repositoryRoot 'templates\Verify-LocalCodex.prompt.md'
+    $nativeAgentTemplatePath = Join-Path $repositoryRoot 'templates\LocalCodex-Native.agent.md'
     $guideSourcePath = Join-Path $repositoryRoot 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
-    foreach ($requiredFile in @($standardsTemplatePath, $localCodexPromptTemplatePath, $guideSourcePath)) {
+    foreach ($requiredFile in @($standardsTemplatePath, $localCodexPromptTemplatePath, $nativeAgentTemplatePath, $guideSourcePath)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             throw "Modele d instructions introuvable : $requiredFile"
         }
@@ -202,6 +203,16 @@ function Set-OpenZimProjectInstructions {
     }
     $localCodexPromptFrontMatter = $localCodexPromptMatch.Groups[1].Value
     $localCodexPromptBody = $localCodexPromptMatch.Groups[2].Value
+    $nativeAgentTemplate = [IO.File]::ReadAllText($nativeAgentTemplatePath)
+    $nativeAgentMatch = [regex]::Match(
+        $nativeAgentTemplate,
+        '(?s)\A(---\r?\n.*?\r?\n---)\s*(.*)\z'
+    )
+    if (-not $nativeAgentMatch.Success) {
+        throw "Le modele '$nativeAgentTemplatePath' doit contenir un en-tete YAML suivi des instructions."
+    }
+    $nativeAgentFrontMatter = $nativeAgentMatch.Groups[1].Value
+    $nativeAgentBody = $nativeAgentMatch.Groups[2].Value
     $guideSource = [IO.File]::ReadAllText($guideSourcePath)
     $guideMatch = [regex]::Match(
         $guideSource,
@@ -271,6 +282,7 @@ création, modification, correction ou revue de code.
 $gitIgnoreBody = @'
 # Configuration OpenZIM propre a cette machine
 .vscode/mcp.json
+.vscode/mcp.json.previous
 .github/copilot-instructions.md
 
 # Bibliotheque et etat d execution locaux
@@ -307,6 +319,14 @@ catalog-development-candidates.json
             Body          = $localCodexPromptBody
             InitialPrefix = $localCodexPromptFrontMatter
             Label         = 'Prompt de verification Local-Codex'
+        }
+        [pscustomobject]@{
+            Path          = Join-Path $workspace.Path '.github\agents\local-codex-native.agent.md'
+            BeginMarker   = '<!-- local-codex-native-agent:begin -->'
+            EndMarker     = '<!-- local-codex-native-agent:end -->'
+            Body          = $nativeAgentBody
+            InitialPrefix = $nativeAgentFrontMatter
+            Label         = 'Agent natif Local-Codex pour VS Code'
         }
         [pscustomobject]@{
             Path          = Join-Path $workspace.Path 'docs\ai\Guide-Bonnes-Pratiques-Code.md'

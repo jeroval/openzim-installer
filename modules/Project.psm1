@@ -2,8 +2,57 @@
 
 Set-StrictMode -Version Latest
 
-foreach ($module in @('LocalCodex.Common', 'Hermes', 'Updates', 'OpenZim.Common')) {
+foreach ($module in @('LocalCodex.Common', 'Hermes', 'Updates', 'OpenZim', 'OpenZim.Common')) {
     Import-Module (Join-Path $PSScriptRoot "$module.psm1")
+}
+
+function Set-LocalCodexNativeMcp {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)] [string] $ProjectDirectory,
+        [Parameter(Mandatory)] $McpServer
+    )
+
+    if ([string]::IsNullOrWhiteSpace([string] $McpServer.command) -or @($McpServer.args).Count -eq 0) {
+        throw 'Configuration OpenZIM native incomplete.'
+    }
+    $project = Resolve-LocalCodexProjectRoot $ProjectDirectory
+    $configurationPath = Join-Path $project '.vscode\mcp.json'
+    $managedPath = Join-Path $project '.local-codex\native-mcp-managed.json'
+    $configuration = if (Test-Path -LiteralPath $configurationPath -PathType Leaf) {
+        Read-LocalCodexJson $configurationPath
+    } else {
+        [pscustomobject]@{ servers = [pscustomobject]@{} }
+    }
+    if ($null -eq $configuration.PSObject.Properties['servers']) {
+        $configuration | Add-Member NoteProperty servers ([pscustomobject]@{})
+    }
+    $desired = [pscustomobject]@{
+        type = 'stdio'
+        command = [string] $McpServer.command
+        args = @($McpServer.args)
+    }
+    $desiredJson = $desired | ConvertTo-Json -Depth 20 -Compress
+    $current = $configuration.servers.PSObject.Properties['openzim']
+    if ($null -ne $current) {
+        $currentJson = $current.Value | ConvertTo-Json -Depth 20 -Compress
+        if ($currentJson -ne $desiredJson) {
+            if (-not (Test-Path -LiteralPath $managedPath -PathType Leaf)) {
+                throw 'Serveur OpenZIM natif deja configure differemment ; configuration utilisateur preservee.'
+            }
+            $managed = Read-LocalCodexJson $managedPath
+            $managedJson = $managed.server | ConvertTo-Json -Depth 20 -Compress
+            if ($currentJson -ne $managedJson) {
+                throw 'Serveur OpenZIM natif modifie hors Local-Codex ; configuration utilisateur preservee.'
+            }
+        }
+    }
+    $configuration.servers | Add-Member NoteProperty openzim $desired -Force
+    if ($PSCmdlet.ShouldProcess($configurationPath, 'Connecter le chat natif VS Code a OpenZIM')) {
+        Write-LocalCodexJson $configurationPath $configuration
+        Write-LocalCodexJson $managedPath @{ schemaVersion = 1; server = $desired }
+        Write-Host "OpenZIM configure pour le chat natif VS Code : $configurationPath" -ForegroundColor Green
+    }
 }
 
 function Resolve-LocalCodexProjectRoot {
@@ -28,6 +77,7 @@ function Set-LocalCodexProjectAgentConfiguration {
     }
     $project = Resolve-LocalCodexProjectRoot $ProjectDirectory
     Set-LocalCodexVSCode $Settings $StateDirectory $project -WhatIf:$WhatIfPreference
+    Set-LocalCodexNativeMcp $project (Get-LocalCodexOpenZim $Settings) -WhatIf:$WhatIfPreference
     Set-OpenZimProjectInstructions -WorkspacePath $project -WhatIf:$WhatIfPreference | Out-Null
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     $healthTemplate = Join-Path $repositoryRoot 'templates\Test-LocalCodexHealth.ps1'
@@ -99,7 +149,9 @@ function Initialize-LocalCodexProject {
         ProjectConfiguration = $metadataPath
         HealthCheck = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
         Prompt = Join-Path $project '.github\prompts\verifier-codex.prompt.md'
+        NativeAgent = Join-Path $project '.github\agents\local-codex-native.agent.md'
+        NativeMcp = Join-Path $project '.vscode\mcp.json'
     }
 }
 
-Export-ModuleMember -Function Initialize-LocalCodexProject,Set-LocalCodexProjectAgentConfiguration,Resolve-LocalCodexProjectRoot
+Export-ModuleMember -Function Initialize-LocalCodexProject,Set-LocalCodexProjectAgentConfiguration,Set-LocalCodexNativeMcp,Resolve-LocalCodexProjectRoot

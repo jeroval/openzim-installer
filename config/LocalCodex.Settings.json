@@ -4,7 +4,9 @@
   "integration": {
     "protocol": "ACP",
     "vscodeExtension": "formulahendry.acp-client",
-    "agentName": "Local-Codex"
+    "agentName": "Local-Codex",
+    "nativeModelExtension": "ollama.ollama",
+    "nativeAgentName": "Local-Codex Native"
   },
   "hardware": { "delegation": false },
   "model": { "catalog": "ModelCatalog.json", "id": "qwen35-9b-q4", "contextTokens": 65536 },
