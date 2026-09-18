@@ -105,8 +105,9 @@ function Get-LocalCodexDoctor {
             Assert-LocalCodexAgentContext ([long] $candidate.contextTokens) ([long] $Settings.hermes.minimumContextTokens)
             $details = Invoke-LocalCodexOllama $Settings '/api/show' @{ model = $candidate.model }
             if ('tools' -notin @($details.capabilities)) { throw 'Tool calling absent.' }
+            if ('thinking' -notin @($details.capabilities)) { throw 'Mode de raisonnement absent.' }
             if ($details.parameters -notmatch "(?m)^num_ctx\s+$($candidate.contextTokens)\s*$") { throw 'Contexte Ollama different du candidat.' }
-            "$($candidate.model), contexte $($candidate.contextTokens)"
+            "$($candidate.model), contexte $($candidate.contextTokens), outils et raisonnement actifs"
         }
         Configuration = {
             $candidate = Read-LocalCodexJson $candidatePath

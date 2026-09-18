@@ -146,6 +146,7 @@ Add-HealthCheck 'Model' {
     $details = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/show' -Method Post `
         -ContentType 'application/json' -Body $showBody -TimeoutSec 30 -ErrorAction Stop
     if ('tools' -notin @($details.capabilities)) { throw 'Le modele actif ne declare pas la capacite tools.' }
+    if ('thinking' -notin @($details.capabilities)) { throw 'Le modele actif ne declare pas la capacite thinking.' }
     if ([string] $details.parameters -notmatch "(?m)^num_ctx\s+$([long] $active.contextTokens)\s*$") {
         throw "Le contexte charge par Ollama ne correspond pas aux $($active.contextTokens) tokens attendus."
     }
@@ -184,8 +185,15 @@ Add-HealthCheck 'NativeChat' {
     $agentPath = Join-Path $projectDirectory '.github\agents\local-codex-native.agent.md'
     $agentContent = Get-Content -LiteralPath $agentPath -Raw -Encoding UTF8
     if ($agentContent -notmatch '(?m)^name:\s*Local-Codex Native\s*$' -or
-        $agentContent -notmatch "openzim/\*" -or $agentContent -notmatch "'execute'") {
+        $agentContent -notmatch "openzim/\*" -or $agentContent -notmatch "'execute'" -or
+        $agentContent -notmatch '## Dialogue adaptatif et initiative') {
         throw 'Custom agent Local-Codex Native absent ou incomplet.'
+    }
+    $agentsPath = Join-Path $projectDirectory 'AGENTS.md'
+    $agentsContent = Get-Content -LiteralPath $agentsPath -Raw -Encoding UTF8
+    if ($agentsContent -notmatch 'au maximum trois questions' -or
+        $agentsContent -notmatch 'demande claire, agis sans question rituelle') {
+        throw 'Politique de dialogue adaptatif absente de AGENTS.md.'
     }
     $nativeMcpPath = Join-Path $projectDirectory '.vscode\mcp.json'
     $nativeMcp = Get-Content -LiteralPath $nativeMcpPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -198,7 +206,7 @@ Add-HealthCheck 'NativeChat' {
     }
     $locations['NativeAgent'] = $agentPath
     $locations['NativeMcp'] = $nativeMcpPath
-    'Agent natif, instructions et OpenZIM MCP coherents avec Hermes'
+    'Agent natif, dialogue adaptatif et OpenZIM MCP coherents avec Hermes'
 }
 
 Add-HealthCheck 'OpenZimMCP' {

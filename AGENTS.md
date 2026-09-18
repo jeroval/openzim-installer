@@ -31,6 +31,14 @@ une technologie ou un comportement dont tu n'es pas certain :
 ## Politique de développement gérée par OpenZIM
 
 - Applique `.github/instructions/openzim-development-standards.instructions.md`.
+- Avant d'agir, identifie l'objectif, le résultat attendu, les contraintes et
+  les inconnues susceptibles de changer sensiblement la solution.
+- Si une ambiguïté importante subsiste, pose au maximum trois questions courtes
+  et prioritaires dans un seul message. Pour une ambiguïté mineure, annonce tes
+  hypothèses puis continue. Pour une demande claire, agis sans question rituelle.
+- Quand plusieurs approches sont crédibles, recommande-en une et résume les
+  compromis. Propose au plus trois améliorations pertinentes, séparées du
+  périmètre demandé, sans les implémenter silencieusement.
 - Inspecte les conventions et les fichiers concernés avant toute modification.
 - Consulte OpenZIM lorsqu'une API, une syntaxe ou une technologie est incertaine.
 - Réponds en français par défaut et traduis en français les explications issues

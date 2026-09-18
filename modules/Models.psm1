@@ -17,6 +17,7 @@ function Get-LocalCodexModel {
         throw 'Un tag explicite autre que latest est obligatoire.'
     }
     if (-not $model.capabilities.tools) { throw 'Le modele ne declare pas le support des outils.' }
+    if (-not $model.capabilities.thinking) { throw 'Le modele ne declare pas le support du raisonnement.' }
     return $model
 }
 
@@ -109,6 +110,7 @@ function New-LocalCodexModelProfile {
     }
     $details = Invoke-LocalCodexOllama $Settings '/api/show' @{ model = $model.ollamaTag }
     if ('tools' -notin @($details.capabilities)) { throw 'Ollama ne confirme pas le tool calling.' }
+    if ('thinking' -notin @($details.capabilities)) { throw 'Ollama ne confirme pas le mode de raisonnement.' }
     $contextLimits = @($details.model_info.PSObject.Properties | Where-Object Name -Like '*.context_length' | ForEach-Object { [long] $_.Value })
     if ($contextLimits.Count -eq 0 -or ($contextLimits | Measure-Object -Maximum).Maximum -lt $Settings.model.contextTokens) {
         throw 'Contexte demande non confirme par les metadonnees Ollama.'

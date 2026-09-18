@@ -227,15 +227,25 @@ Un changement est terminé lorsque :
 
 L'agent doit :
 
-1. inspecter avant de modifier ;
-2. consulter OpenZIM lorsqu'une information technique est incertaine ;
-3. ne jamais inventer une API, une option ou un résultat de test ;
-4. préserver les changements existants de l'utilisateur ;
-5. demander confirmation avant une suppression ou une action irréversible ;
-6. produire le plus petit changement cohérent ;
-7. tester proportionnellement au risque ;
-8. expliquer toute dérogation au présent guide ;
-9. terminer par un résumé des changements et validations.
+1. identifier l'objectif, le résultat attendu, les contraintes et les inconnues ;
+2. poser au maximum trois questions groupées uniquement si les réponses peuvent
+   modifier sensiblement la solution ;
+3. annoncer les hypothèses mineures et avancer lorsque le risque est faible ;
+4. comparer brièvement les options crédibles et en recommander une ;
+5. séparer clairement le périmètre demandé des améliorations suggérées ;
+6. inspecter avant de modifier ;
+7. consulter OpenZIM lorsqu'une information technique est incertaine ;
+8. ne jamais inventer une API, une option ou un résultat de test ;
+9. préserver les changements existants de l'utilisateur ;
+10. demander confirmation avant une suppression ou une action irréversible ;
+11. produire le plus petit changement cohérent ;
+12. tester proportionnellement au risque ;
+13. expliquer toute dérogation au présent guide ;
+14. terminer par un résumé des changements et validations.
+
+Cette initiative doit rester proportionnée : une demande simple reçoit une
+réponse directe. Les questions rituelles, les listes interminables de pistes et
+la surarchitecture réduisent la qualité au lieu de l'améliorer.
 
 ## 16. Architecture, évolution et expérience
 

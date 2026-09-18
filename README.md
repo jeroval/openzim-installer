@@ -126,4 +126,11 @@ profil Ollama `local-codex-*` actif dans le selecteur de modele. Au premier
 demarrage, acceptez l'execution du serveur MCP local `openzim`. Les chemins
 machine de `.vscode/mcp.json` restent exclus de Git.
 
+Les deux interfaces reçoivent automatiquement une politique de dialogue
+adaptatif. L'agent agit directement lorsque la demande est claire, explicite
+ses hypothèses mineures, et ne pose jusqu'à trois questions groupées que si les
+réponses peuvent changer sensiblement la solution. Il recommande une approche,
+signale les risques importants et sépare les améliorations proposées du travail
+effectivement autorisé. Aucune commande spéciale n'est nécessaire.
+
 Les projets, dépôts Git et archives ZIM ne sont jamais supprimés silencieusement.

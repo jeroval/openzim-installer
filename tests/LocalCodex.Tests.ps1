@@ -127,6 +127,9 @@ Describe 'Local-Codex configuration et catalogue offline' {
         if (@($catalog.models | Where-Object { $_.parametersBillions -gt 9.65 }).Count -ne 0) {
             throw 'Le catalogue Local-Codex ne doit pas proposer de modele superieur a 9B.'
         }
+        if (@($catalog.models | Where-Object { -not $_.capabilities.tools -or -not $_.capabilities.thinking }).Count -ne 0) {
+            throw 'Chaque modele propose doit prendre en charge les outils et le raisonnement.'
+        }
     }
 
     It 'transmet les arguments litteraux au processus sans interpretation shell' {
@@ -276,10 +279,13 @@ Describe 'Experience utilisateur Local-Codex' {
         $health = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
         $nativeAgent = Join-Path $project '.github\agents\local-codex-native.agent.md'
         $nativeMcp = Join-Path $project '.vscode\mcp.json'
+        $agents = Join-Path $project 'AGENTS.md'
         Test-Path -LiteralPath $prompt -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $health -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $nativeAgent -PathType Leaf | Should Be $true
         Test-Path -LiteralPath $nativeMcp -PathType Leaf | Should Be $true
+        ([IO.File]::ReadAllText($nativeAgent)).Contains('## Dialogue adaptatif et initiative') | Should Be $true
+        ([IO.File]::ReadAllText($agents)).Contains('au maximum trois questions') | Should Be $true
         $promptContent = [IO.File]::ReadAllText($prompt)
         $healthContent = [IO.File]::ReadAllText($health)
         $promptContent.Contains("name: 'verifier-codex'") | Should Be $true

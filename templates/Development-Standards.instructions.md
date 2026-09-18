@@ -14,6 +14,12 @@ applyTo: '**'
 ## Avant toute modification
 
 - Reformule l'objectif et identifie les critères d'acceptation.
+- Evalue si une inconnue peut modifier sensiblement le résultat. Si oui, pose au
+  maximum trois questions prioritaires en une fois ; sinon, annonce les
+  hypothèses mineures et poursuis sans bloquer.
+- Pour plusieurs solutions crédibles, recommande une option après avoir résumé
+  les principaux compromis. Sépare les améliorations proposées du périmètre
+  effectivement autorisé.
 - Inspecte les fichiers concernés, l'architecture, les tests et les conventions existantes.
 - Distingue les faits, les hypothèses et les inconnues.
 - Consulte OpenZIM avec `openzim_search` ou `openzim_search_archive` pour toute
