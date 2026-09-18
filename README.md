@@ -85,4 +85,17 @@ conseillees, materiel detecte et chemins d'installation. Un chemin se terminant
 par `.vscode` est automatiquement ramene a la racine du projet. L'option 6
 permet de revoir les emplacements sans relancer une installation.
 
+## Commandes du chat
+
+Chaque projet initialise recoit des commandes reutilisables dans
+`.github/prompts` :
+
+- `/verifier-openzim` teste la liste des archives puis lit un document local ;
+- `/verifier-codex` controle VS Code, ACP Client, Hermes, Ollama, le modele,
+  OpenZIM MCP et les archives, puis effectue une lecture documentaire reelle.
+
+Dans VS Code, tapez `/` dans le chat et choisissez la commande. Vous pouvez
+aussi lancer `Chat: Run Prompt` depuis la palette de commandes. Le diagnostic
+machine utilise `.local-codex/Test-LocalCodexHealth.ps1` en lecture seule.
+
 Les projets, dépôts Git et archives ZIM ne sont jamais supprimés silencieusement.

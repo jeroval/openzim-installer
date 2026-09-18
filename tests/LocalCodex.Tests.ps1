@@ -219,6 +219,18 @@ Describe 'Experience utilisateur Local-Codex' {
         Resolve-LocalCodexProjectRoot (Join-Path $project '.vscode') | Should Be $project
     }
 
+    It 'deploie la commande verifier-codex et son diagnostic dans un projet' {
+        $settings = Get-LocalCodexConfiguration (Join-Path $root 'config\LocalCodex.Settings.json')
+        $project = Join-Path $TestDrive 'command-project'
+        [IO.Directory]::CreateDirectory($project) | Out-Null
+        Set-LocalCodexProjectAgentConfiguration $settings (Join-Path $TestDrive 'command-state') $project -Confirm:$false | Out-Null
+        $prompt = Join-Path $project '.github\prompts\verifier-codex.prompt.md'
+        $health = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
+        Test-Path -LiteralPath $prompt -PathType Leaf | Should Be $true
+        Test-Path -LiteralPath $health -PathType Leaf | Should Be $true
+        ([IO.File]::ReadAllText($prompt)).Contains("name: 'verifier-codex'") | Should Be $true
+    }
+
     It 'inventorie les emplacements importants sans modifier la machine' {
         $settings = Get-LocalCodexConfiguration (Join-Path $root 'config\LocalCodex.Settings.json')
         $items = @(Get-LocalCodexComponentInventory $settings (Join-Path $TestDrive 'health-state'))

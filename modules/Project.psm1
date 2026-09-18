@@ -29,6 +29,21 @@ function Set-LocalCodexProjectAgentConfiguration {
     $project = Resolve-LocalCodexProjectRoot $ProjectDirectory
     Set-LocalCodexVSCode $Settings $StateDirectory $project -WhatIf:$WhatIfPreference
     Set-OpenZimProjectInstructions -WorkspacePath $project -WhatIf:$WhatIfPreference | Out-Null
+    $repositoryRoot = Split-Path -Parent $PSScriptRoot
+    $healthTemplate = Join-Path $repositoryRoot 'templates\Test-LocalCodexHealth.ps1'
+    if (-not (Test-Path -LiteralPath $healthTemplate -PathType Leaf)) {
+        throw "Script de diagnostic Local-Codex introuvable : $healthTemplate"
+    }
+    $healthScript = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
+    if ($PSCmdlet.ShouldProcess($healthScript, 'Installer le diagnostic local en lecture seule')) {
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $healthScript)) | Out-Null
+        [IO.File]::WriteAllText(
+            $healthScript,
+            [IO.File]::ReadAllText($healthTemplate),
+            [Text.UTF8Encoding]::new($true)
+        )
+        Write-Host "Commande /verifier-codex preparee : $healthScript" -ForegroundColor Green
+    }
     return $project
 }
 
@@ -71,6 +86,7 @@ function Initialize-LocalCodexProject {
         stateDirectory = $StateDirectory
         agent = 'Local-Codex'
         model = $releases.active.model
+        healthCheckScript = '.local-codex\Test-LocalCodexHealth.ps1'
     }
     if ($PSCmdlet.ShouldProcess($metadataPath, 'Ecrire la configuration locale du projet')) {
         Write-LocalCodexJson $metadataPath $metadata
@@ -81,6 +97,8 @@ function Initialize-LocalCodexProject {
         GitRepository = Test-Path -LiteralPath (Join-Path $project '.git')
         VSCodeSettings = Join-Path $project '.vscode\settings.json'
         ProjectConfiguration = $metadataPath
+        HealthCheck = Join-Path $project '.local-codex\Test-LocalCodexHealth.ps1'
+        Prompt = Join-Path $project '.github\prompts\verifier-codex.prompt.md'
     }
 }
 

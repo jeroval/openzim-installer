@@ -174,8 +174,9 @@ function Set-OpenZimProjectInstructions {
     $repositoryRoot = Split-Path -Parent $PSScriptRoot
     $standardsTemplatePath = Join-Path $repositoryRoot 'templates\Development-Standards.instructions.md'
     $startupPromptTemplatePath = Join-Path $repositoryRoot 'templates\Verify-OpenZim.prompt.md'
+    $localCodexPromptTemplatePath = Join-Path $repositoryRoot 'templates\Verify-LocalCodex.prompt.md'
     $guideSourcePath = Join-Path $repositoryRoot 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
-    foreach ($requiredFile in @($standardsTemplatePath, $startupPromptTemplatePath, $guideSourcePath)) {
+    foreach ($requiredFile in @($standardsTemplatePath, $startupPromptTemplatePath, $localCodexPromptTemplatePath, $guideSourcePath)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             throw "Modele d instructions introuvable : $requiredFile"
         }
@@ -202,6 +203,16 @@ function Set-OpenZimProjectInstructions {
     }
     $startupPromptFrontMatter = $startupPromptMatch.Groups[1].Value
     $startupPromptBody = $startupPromptMatch.Groups[2].Value
+    $localCodexPromptTemplate = [IO.File]::ReadAllText($localCodexPromptTemplatePath)
+    $localCodexPromptMatch = [regex]::Match(
+        $localCodexPromptTemplate,
+        '(?s)\A(---\r?\n.*?\r?\n---)\s*(.*)\z'
+    )
+    if (-not $localCodexPromptMatch.Success) {
+        throw "Le modele '$localCodexPromptTemplatePath' doit contenir un en-tete YAML suivi du prompt."
+    }
+    $localCodexPromptFrontMatter = $localCodexPromptMatch.Groups[1].Value
+    $localCodexPromptBody = $localCodexPromptMatch.Groups[2].Value
     $guideSource = [IO.File]::ReadAllText($guideSourcePath)
     $guideMatch = [regex]::Match(
         $guideSource,
@@ -249,6 +260,7 @@ création, modification, correction ou revue de code.
 - Si l’outil ou le document est indisponible, indique `OpenZIM non vérifié` ou
   `Aucun document local pertinent trouvé` au lieu d’inventer une consultation.
 - Pour un contrôle complet à la demande, exécute le prompt `/verifier-openzim`.
+- Pour contrôler toute la chaîne locale, exécute le prompt `/verifier-codex`.
 '@.Trim()
 
     $agentPolicyBody = @'
@@ -273,6 +285,7 @@ $gitIgnoreBody = @'
 .github/copilot-instructions.md
 
 # Bibliotheque et etat d execution locaux
+.local-codex/
 debug.log
 *.zim
 *.zim.part
@@ -305,6 +318,14 @@ catalog-development-candidates.json
             Body          = $startupPromptBody
             InitialPrefix = $startupPromptFrontMatter
             Label         = 'Prompt de verification OpenZIM'
+        }
+        [pscustomobject]@{
+            Path          = Join-Path $workspace.Path '.github\prompts\verifier-codex.prompt.md'
+            BeginMarker   = '<!-- local-codex-health-check:begin -->'
+            EndMarker     = '<!-- local-codex-health-check:end -->'
+            Body          = $localCodexPromptBody
+            InitialPrefix = $localCodexPromptFrontMatter
+            Label         = 'Prompt de verification Local-Codex'
         }
         [pscustomobject]@{
             Path          = Join-Path $workspace.Path 'docs\ai\Guide-Bonnes-Pratiques-Code.md'

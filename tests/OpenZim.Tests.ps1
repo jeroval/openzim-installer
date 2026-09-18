@@ -266,9 +266,10 @@ Describe 'Instructions IA du projet' {
 
         $standardsPath = Join-Path $workspace '.github\instructions\openzim-development-standards.instructions.md'
         $startupPromptPath = Join-Path $workspace '.github\prompts\verifier-openzim.prompt.md'
+        $localCodexPromptPath = Join-Path $workspace '.github\prompts\verifier-codex.prompt.md'
         $guidePath = Join-Path $workspace 'docs\ai\Guide-Bonnes-Pratiques-Code.md'
         $agentsPath = Join-Path $workspace 'AGENTS.md'
-        foreach ($generatedPath in @($standardsPath, $startupPromptPath, $guidePath, $agentsPath)) {
+        foreach ($generatedPath in @($standardsPath, $startupPromptPath, $localCodexPromptPath, $guidePath, $agentsPath)) {
             if (-not (Test-Path -LiteralPath $generatedPath -PathType Leaf)) {
                 throw "Fichier de standards absent : $generatedPath"
             }
@@ -288,11 +289,19 @@ Describe 'Instructions IA du projet' {
             -not $startupPrompt.Contains('exclusivement en fran')) {
             throw 'Le prompt de verification OpenZIM est incomplet.'
         }
+        $localCodexPrompt = [IO.File]::ReadAllText($localCodexPromptPath)
+        if ($localCodexPrompt -notmatch 'name:\s*[''"]verifier-codex[''"]' -or
+            -not $localCodexPrompt.Contains('Test-LocalCodexHealth.ps1') -or
+            -not $localCodexPrompt.Contains('openzim_list_archives') -or
+            [regex]::Matches($localCodexPrompt, '<!-- local-codex-health-check:begin -->').Count -ne 1) {
+            throw 'Le prompt de verification Local-Codex est incomplet ou duplique.'
+        }
 
         $gitIgnore = [IO.File]::ReadAllText($gitIgnorePath)
         if (-not $gitIgnore.Contains('.env') -or
             -not $gitIgnore.Contains('.vscode/mcp.json') -or
             -not $gitIgnore.Contains('.github/copilot-instructions.md') -or
+            -not $gitIgnore.Contains('.local-codex/') -or
             -not $gitIgnore.Contains('debug.log') -or
             -not $gitIgnore.Contains('*.zim') -or
             -not $gitIgnore.Contains('zim-inventory.json')) {
