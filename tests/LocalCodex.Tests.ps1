@@ -5,6 +5,7 @@ Import-Module (Join-Path $root 'modules\Hermes.psm1') -Force
 Import-Module (Join-Path $root 'modules\Updates.psm1') -Force
 Import-Module (Join-Path $root 'modules\UserExperience.psm1') -Force
 Import-Module (Join-Path $root 'modules\Project.psm1') -Force
+Import-Module (Join-Path $root 'modules\Knowledge.psm1') -Force
 Import-Module (Join-Path $root 'modules\Prerequisites.psm1') -Force
 Import-Module (Join-Path $root 'modules\Doctor.psm1') -Force
 Import-Module (Join-Path $root 'modules\Certification.psm1') -Force
@@ -335,6 +336,32 @@ Describe 'Experience utilisateur Local-Codex' {
         foreach ($action in @('-Action Status', '-Action Create', '-Action Run', '-Action Remove')) {
             $knowledgeModule | Should Match ([regex]::Escape($action))
         }
+    }
+
+    It 'enregistre le quota ZIM choisi dans la configuration active' {
+        $configDirectory = Join-Path $TestDrive 'knowledge-budget'
+        [IO.Directory]::CreateDirectory($configDirectory) | Out-Null
+        $configPath = Join-Path $configDirectory 'Knowledge.Settings.json'
+        Copy-Item (Join-Path $root 'config\Knowledge.Settings.json') $configPath
+        $configuration = Read-LocalCodexJson $configPath
+        $settings = [pscustomobject]@{
+            KnowledgeConfigPath = $configPath
+            KnowledgeSettings = $configuration
+        }
+
+        $result = Set-LocalCodexKnowledgeBudget $settings 100 -Confirm:$false
+
+        $result.BudgetGB | Should Be 100
+        $settings.KnowledgeSettings.maxLibrarySizeGB | Should Be 100
+        (Read-LocalCodexJson $configPath).maxLibrarySizeGB | Should Be 100
+    }
+
+    It 'affiche les quotas guides et le recalcul automatique dans le menu' {
+        $knowledgeModule = Get-Content -LiteralPath (Join-Path $root 'modules\Knowledge.psm1') -Raw -Encoding UTF8
+        foreach ($budget in @('50 Go', '100 Go', '200 Go')) {
+            $knowledgeModule | Should Match ([regex]::Escape($budget))
+        }
+        $knowledgeModule | Should Match ([regex]::Escape('-Action Plan'))
     }
 
     It 'refuse de configurer implicitement le dossier courant comme projet' {

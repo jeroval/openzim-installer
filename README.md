@@ -80,6 +80,11 @@ trouve dans `config/Knowledge.Settings.json`. Le même menu permet de créer,
 inspecter, tester ou supprimer la tâche Windows de mise à jour hebdomadaire ; la
 suppression de cette tâche conserve toujours les archives.
 
+Le quota de la bibliothèque se règle directement dans ce menu, sans modifier de
+JSON. Les choix guidés 50, 100 et 200 Go, ainsi qu'une valeur personnalisée,
+sont enregistrés puis utilisés pour recalculer immédiatement le panier. Ce
+recalcul ne télécharge rien et ne supprime aucune archive déjà installée.
+
 ## Reprise automatique des erreurs IA
 
 Hermes effectue jusqu'a cinq tentatives pour les appels au modele qui echouent
